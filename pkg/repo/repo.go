@@ -2,7 +2,7 @@ package repo
 
 import "context"
 
-// Repo is a collection of Debian packages.
+// Repo is a source for Debian packages.
 type Repo interface {
 	// InRelease fetches a signed description of the repository and its contents
 	InRelease(ctx context.Context, dist string) ([]byte, error)

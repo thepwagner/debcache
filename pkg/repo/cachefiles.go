@@ -50,10 +50,9 @@ func (c FileCacheStorage) get(subDir, key string, ttl time.Duration) ([]byte, bo
 	if ttl > 0 {
 		// Check the file's mtime and ignore if expired:
 		stat, err := os.Stat(p)
-		if !errors.Is(err, fs.ErrNotExist) {
-			slog.Error("FileCacheStorage.stat error", slog.String("error", err.Error()))
-		}
-		if time.Since(stat.ModTime()) > ttl {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, false
+		} else if err == nil && time.Since(stat.ModTime()) > ttl {
 			return nil, false
 		}
 	}

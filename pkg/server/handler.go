@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/thepwagner/debcache/pkg/dynamic"
 	"github.com/thepwagner/debcache/pkg/repo"
 )
 
@@ -32,6 +33,12 @@ func NewHandler() *Handler {
 	h.repos["debian"] = repo.NewCached(repo.NewUpstream(*u), repo.NewFileCacheStorage("tmp"))
 	u, _ = url.Parse("https://deb.debian.org/debian-security")
 	h.repos["debian-security"] = repo.NewCached(repo.NewUpstream(*u), repo.NewFileCacheStorage("tmp"))
+
+	repo, err := dynamic.NewRepo()
+	if err != nil {
+		panic(err)
+	}
+	h.repos["dynamic"] = repo
 	return h
 }
 
@@ -56,6 +63,7 @@ func (h Handler) InRelease(w http.ResponseWriter, r *http.Request) {
 
 	res, err := repo.InRelease(r.Context(), dist)
 	if err != nil {
+		slog.Error("repo.InRelease", slog.String("error", err.Error()))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
