@@ -1,0 +1,120 @@
+package server
+
+import (
+	"log/slog"
+	"net/http"
+	"net/url"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/thepwagner/debcache/pkg/repo"
+)
+
+type Handler struct {
+	mux *chi.Mux
+
+	repos map[string]repo.Repo
+}
+
+func NewHandler() *Handler {
+	h := &Handler{
+		mux:   chi.NewRouter(),
+		repos: map[string]repo.Repo{},
+	}
+	h.mux.Use(middleware.Logger)
+
+	u, _ := url.Parse("https://deb.debian.org/debian")
+
+	h.repos["debian"] = repo.NewCached(repo.NewUpstream(*u))
+
+	h.mux.Get("/{repo}/dists/{dist}/InRelease", h.InRelease)
+	h.mux.Get("/{repo}/dists/{dist}/{component}/binary-{architecture}/by-hash/{digestAlgo}/{digest}", h.ByHash)
+	h.mux.Get("/{repo}/pool/{component}/{p}/{package}/{filename}", h.Pool)
+	return h
+}
+
+func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.mux.ServeHTTP(w, r)
+}
+
+func (h Handler) InRelease(w http.ResponseWriter, r *http.Request) {
+	repoName := chi.URLParam(r, "repo")
+	dist := chi.URLParam(r, "dist")
+	slog.Info("InRelease", slog.String("path", r.URL.Path), slog.String("dist", dist))
+
+	repo, ok := h.repos[repoName]
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+
+	res, err := repo.InRelease(r.Context(), dist)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(res) == 0 {
+		http.NotFound(w, r)
+		return
+	}
+
+	_, _ = w.Write(res)
+}
+
+func (h Handler) ByHash(w http.ResponseWriter, r *http.Request) {
+	repoName := chi.URLParam(r, "repo")
+	repo, ok := h.repos[repoName]
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	digestAlgo := chi.URLParam(r, "digestAlgo")
+	if digestAlgo != "SHA256" {
+		http.NotFound(w, r)
+		return
+	}
+
+	dist := chi.URLParam(r, "dist")
+	component := chi.URLParam(r, "component")
+	arch := chi.URLParam(r, "architecture")
+	digest := chi.URLParam(r, "digest")
+	slog.Info("ByHash", slog.String("path", r.URL.Path), slog.String("dist", dist), slog.String("component", component), slog.String("arch", arch), slog.String("digest", digest))
+
+	res, err := repo.ByHash(r.Context(), dist, component, arch, digest)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(res) == 0 {
+		http.NotFound(w, r)
+		return
+	}
+
+	_, _ = w.Write(res)
+}
+
+func (h Handler) Pool(w http.ResponseWriter, r *http.Request) {
+	repoName := chi.URLParam(r, "repo")
+	repo, ok := h.repos[repoName]
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+
+	component := chi.URLParam(r, "component")
+	pkg := chi.URLParam(r, "package")
+	filename := chi.URLParam(r, "filename")
+	slog.Info("Pool", slog.String("path", r.URL.Path), slog.String("component", component), slog.String("pkg", pkg), slog.String("filename", filename))
+
+	b, err := repo.Pool(r.Context(), component, pkg, filename)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(b) == 0 {
+		http.NotFound(w, r)
+		return
+	}
+
+	_, _ = w.Write(b)
+}
