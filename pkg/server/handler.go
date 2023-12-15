@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -25,7 +26,11 @@ func NewHandler() *Handler {
 	h.mux.Use(middleware.RequestID)
 	h.mux.Use(Logger)
 	h.mux.Get("/{repo}/dists/{dist}/InRelease", h.InRelease)
+
+	h.mux.Get("/{repo}/dists/{dist}/{component}/binary-{architecture}/Packages", h.Packages)
+	h.mux.Get("/{repo}/dists/{dist}/{component}/binary-{architecture}/Packages{compression:(.[gx]z|)}", h.Packages)
 	h.mux.Get("/{repo}/dists/{dist}/{component}/binary-{architecture}/by-hash/{digestAlgo}/{digest}", h.ByHash)
+
 	h.mux.Get("/{repo}/pool/{component}/{p}/{package}/{filename}", h.Pool)
 
 	// FIXME: hacks should come from config
@@ -64,6 +69,42 @@ func (h Handler) InRelease(w http.ResponseWriter, r *http.Request) {
 	res, err := repo.InRelease(r.Context(), dist)
 	if err != nil {
 		slog.Error("repo.InRelease", slog.String("error", err.Error()))
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(res) == 0 {
+		http.NotFound(w, r)
+		return
+	}
+
+	_, _ = w.Write(res)
+}
+
+func (h Handler) Packages(w http.ResponseWriter, r *http.Request) {
+	repoName := chi.URLParam(r, "repo")
+	dist := chi.URLParam(r, "dist")
+	component := chi.URLParam(r, "component")
+	arch := chi.URLParam(r, "architecture")
+	compression := repo.ParseCompression(chi.URLParam(r, "compression"))
+	slog.Info("handling Packages",
+		slog.String("request_id", middleware.GetReqID(r.Context())),
+		slog.String("repo", repoName),
+		slog.String("dist", dist),
+		slog.String("component", component),
+		slog.String("arch", arch),
+		slog.Any("compression", compression),
+	)
+
+	rep, ok := h.repos[repoName]
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	fmt.Println(r)
+
+	res, err := rep.Packages(r.Context(), dist, component, arch, compression)
+	if err != nil {
+		slog.Error("repo.Packages", slog.String("error", err.Error()))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

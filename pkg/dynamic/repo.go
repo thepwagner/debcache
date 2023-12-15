@@ -3,6 +3,7 @@ package dynamic
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"log/slog"
 	"os"
@@ -51,11 +52,6 @@ func NewRepo() (*Repo, error) {
 func (r *Repo) InRelease(ctx context.Context, dist string) ([]byte, error) {
 
 	// TODO: organize into package lists, calculate digests
-	pkgs, latest, err := r.Source.Packages(ctx, "main", "amd64")
-	if err != nil {
-		return nil, err
-	}
-	slog.Info("dynamic InRelease", "latest", latest, "packages", pkgs)
 
 	var buf bytes.Buffer
 	enc, err := clearsign.Encode(&buf, r.pk, nil)
@@ -69,14 +65,24 @@ func (r *Repo) InRelease(ctx context.Context, dist string) ([]byte, error) {
 		"Suite":    dist,
 		"Codename": dist,
 		"Version":  "12.4",
-		"Date":     latest.UTC().Format(time.RFC1123Z),
+		"Date":     time.Now().UTC().Format(time.RFC1123Z),
 		// "Acquire-By-Hash": "yes", <-- hash tag squad guals
 		"Architectures": "amd64",
 		"Components":    "main",
 		"Description":   "Debian",
 	}
+
+	// Hack for initial end to end:
+	packages, err := r.Packages(ctx, "bookworm", "main", "amd64", repo.CompressionNone)
+	if err != nil {
+		return nil, err
+	}
+
+	dig := sha256.New()
+	dig.Write(packages)
+
 	// FIXME: repo requires "a" digest to not be insecure, slap one in
-	release["SHA256"] = " d6c9c82f4e61b4662f9ba16b9ebb379c57b4943f8b7813091d1f637325ddfb79  1484322 contrib/Contents-all\n"
+	release["SHA256"] = fmt.Sprintf(" %x  %d main/binary-amd64/Packages\n", dig.Sum(nil), len(packages))
 
 	if err := debian.WriteControlFile(enc, release); err != nil {
 		return nil, err
@@ -88,6 +94,20 @@ func (r *Repo) InRelease(ctx context.Context, dist string) ([]byte, error) {
 		return nil, err
 	}
 
+	return buf.Bytes(), nil
+}
+
+func (r *Repo) Packages(ctx context.Context, dist, component, arch string, compression repo.Compression) ([]byte, error) {
+	pkgs, latest, err := r.Source.Packages(ctx, component, arch)
+	if err != nil {
+		return nil, err
+	}
+	slog.Info("dynamic Packages", "latest", latest)
+
+	var buf bytes.Buffer
+	if err := debian.WriteControlFile(&buf, pkgs...); err != nil {
+		return nil, fmt.Errorf("writing Packages: %w", err)
+	}
 	return buf.Bytes(), nil
 }
 

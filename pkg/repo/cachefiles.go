@@ -29,6 +29,14 @@ func (c FileCacheStorage) ReleaseAdd(_ context.Context, key string, value []byte
 	c.add("release", key, value)
 }
 
+func (c FileCacheStorage) PackagesGet(_ context.Context, key string) ([]byte, bool) {
+	return c.get("packages", key, time.Hour)
+}
+
+func (c FileCacheStorage) PackagesAdd(_ context.Context, key string, value []byte) {
+	c.add("packages", key, value)
+}
+
 func (c FileCacheStorage) ByHashGet(_ context.Context, key string) ([]byte, bool) {
 	return c.get("byhash", key, 0)
 }

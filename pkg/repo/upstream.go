@@ -29,6 +29,10 @@ func (u Upstream) InRelease(ctx context.Context, dist string) ([]byte, error) {
 	return u.get(ctx, "dists", dist, "InRelease")
 }
 
+func (u Upstream) Packages(ctx context.Context, dist, component, arch string, compression Compression) ([]byte, error) {
+	return u.get(ctx, "dists", dist, component, fmt.Sprintf("binary-%s", arch), "Packages"+string(compression))
+}
+
 func (u Upstream) ByHash(ctx context.Context, dist, component, arch, digest string) ([]byte, error) {
 	return u.get(ctx, "dists", dist, component, fmt.Sprintf("binary-%s", arch), "by-hash", "SHA256", digest)
 }

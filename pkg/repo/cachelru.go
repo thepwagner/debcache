@@ -9,18 +9,20 @@ import (
 
 // LRUCacheStorage stores cache to an in-memory LRU. Zoom.
 type LRUCacheStorage struct {
-	release *expirable.LRU[string, []byte]
-	byHash  *expirable.LRU[string, []byte]
-	pool    *expirable.LRU[string, []byte]
+	release  *expirable.LRU[string, []byte]
+	packages *expirable.LRU[string, []byte]
+	byHash   *expirable.LRU[string, []byte]
+	pool     *expirable.LRU[string, []byte]
 }
 
 var _ CacheStorage = (*LRUCacheStorage)(nil)
 
 func NewLRUCacheStorage() LRUCacheStorage {
 	return LRUCacheStorage{
-		release: expirable.NewLRU[string, []byte](16, nil, time.Hour),
-		byHash:  expirable.NewLRU[string, []byte](16, nil, time.Hour),
-		pool:    expirable.NewLRU[string, []byte](128, nil, 24*time.Hour),
+		release:  expirable.NewLRU[string, []byte](16, nil, time.Hour),
+		packages: expirable.NewLRU[string, []byte](16, nil, time.Hour),
+		byHash:   expirable.NewLRU[string, []byte](16, nil, 24*time.Hour),
+		pool:     expirable.NewLRU[string, []byte](128, nil, 24*time.Hour),
 	}
 }
 
@@ -30,6 +32,14 @@ func (c LRUCacheStorage) ReleaseGet(_ context.Context, key string) ([]byte, bool
 
 func (c LRUCacheStorage) ReleaseAdd(_ context.Context, key string, value []byte) {
 	c.release.Add(key, value)
+}
+
+func (c LRUCacheStorage) PackagesGet(_ context.Context, key string) ([]byte, bool) {
+	return c.packages.Get(key)
+}
+
+func (c LRUCacheStorage) PackagesAdd(_ context.Context, key string, value []byte) {
+	c.packages.Add(key, value)
 }
 
 func (c LRUCacheStorage) ByHashGet(_ context.Context, key string) ([]byte, bool) {

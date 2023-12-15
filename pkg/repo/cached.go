@@ -18,6 +18,9 @@ type CacheStorage interface {
 	ReleaseGet(context.Context, string) ([]byte, bool)
 	ReleaseAdd(context.Context, string, []byte)
 
+	PackagesGet(context.Context, string) ([]byte, bool)
+	PackagesAdd(context.Context, string, []byte)
+
 	ByHashGet(context.Context, string) ([]byte, bool)
 	ByHashAdd(context.Context, string, []byte)
 
@@ -51,6 +54,30 @@ func (c Cached) InRelease(ctx context.Context, dist string) ([]byte, error) {
 	}
 
 	c.storage.ReleaseAdd(ctx, dist, v)
+	return v, nil
+}
+
+func (c Cached) Packages(ctx context.Context, dist, component, arch string, compression Compression) ([]byte, error) {
+	logAttrs := []any{
+		slog.String("request_id", middleware.GetReqID(ctx)),
+		slog.String("dist", dist),
+		slog.String("component", component),
+		slog.String("arch", arch),
+		slog.String("compression", string(compression)),
+	}
+	key := strings.Join([]string{dist, component, arch, string(compression)}, " ")
+	if v, ok := c.storage.PackagesGet(ctx, key); ok {
+		slog.Info("Packages cache hit", logAttrs...)
+		return v, nil
+	}
+	slog.Info("Packages cache miss", logAttrs...)
+
+	v, err := c.src.Packages(ctx, dist, component, arch, compression)
+	if err != nil {
+		return nil, err
+	}
+
+	c.storage.PackagesAdd(ctx, key, v)
 	return v, nil
 }
 

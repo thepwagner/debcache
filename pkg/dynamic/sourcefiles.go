@@ -2,6 +2,12 @@ package dynamic
 
 import (
 	"context"
+	"crypto/md5"
+	"crypto/sha256"
+	"fmt"
+	"io"
+	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
@@ -27,24 +33,54 @@ func (s FileSource) Packages(ctx context.Context, component, architecture string
 		info, err := file.Info()
 		if err != nil {
 			return nil, time.Time{}, err
-		}
-
-		if mt := info.ModTime(); mt.After(latest) {
+		} else if mt := info.ModTime(); mt.After(latest) {
 			latest = mt
 		}
 
-		f, err := os.Open(filepath.Join(s.dir, file.Name()))
+		fn := filepath.Join(s.dir, file.Name())
+		pkg, err := ParagraphFromDebFile(fn)
 		if err != nil {
 			return nil, time.Time{}, err
+		} else if pkg == nil {
+			slog.Warn("no control file found", "file", fn)
+			continue
 		}
 
-		pkg, err := debian.ParagraphFromDeb(f)
-		if err != nil {
+		if err := addFileData(*pkg, fn, info); err != nil {
 			return nil, time.Time{}, err
-		} else if pkg != nil {
-			ret = append(ret, *pkg)
 		}
+		ret = append(ret, *pkg)
 	}
 
 	return ret, latest, nil
+}
+
+func ParagraphFromDebFile(fn string) (*debian.Paragraph, error) {
+	f, err := os.Open(fn)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	return debian.ParagraphFromDeb(f)
+}
+
+func addFileData(pkg debian.Paragraph, fn string, info fs.FileInfo) error {
+	f, err := os.Open(fn)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	md5sum := md5.New()
+	sha256sum := sha256.New()
+	if _, err := io.Copy(io.MultiWriter(md5sum, sha256sum), f); err != nil {
+		return err
+	}
+	pkg["Filename"] = "/pool/" + info.Name()
+	pkg["Size"] = fmt.Sprintf("%d", info.Size())
+	pkg["MD5sum"] = fmt.Sprintf("%x", md5sum.Sum(nil))
+	pkg["SHA256"] = fmt.Sprintf("%x", sha256sum.Sum(nil))
+	return nil
+
 }
