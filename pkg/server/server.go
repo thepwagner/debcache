@@ -6,10 +6,16 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
+
+	"github.com/lmittmann/tint"
 )
 
 func Run(ctx context.Context) error {
-	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	logger := slog.New(tint.NewHandler(os.Stderr, &tint.Options{
+		Level:      slog.LevelDebug,
+		TimeFormat: time.RFC3339,
+	}))
 	slog.SetDefault(logger)
 
 	h := NewHandler()

@@ -16,7 +16,7 @@ import (
 func TestCached_InRelease(t *testing.T) {
 	u, ctr := countingServer(t, "/dists/test/InRelease")
 
-	cached := repo.NewCached(repo.NewUpstream(u))
+	cached := repo.NewCached(repo.NewUpstream(u), repo.NewLRUCacheStorage())
 	ctx := context.Background()
 	for i := 0; i < 3; i++ {
 		b, err := cached.InRelease(ctx, "test")
@@ -31,7 +31,7 @@ func TestCached_InRelease(t *testing.T) {
 func TestCached_ByHash(t *testing.T) {
 	u, ctr := countingServer(t, "/dists/test/component/binary-arch/by-hash/SHA256/abc123")
 
-	cached := repo.NewCached(repo.NewUpstream(u))
+	cached := repo.NewCached(repo.NewUpstream(u), repo.NewLRUCacheStorage())
 	ctx := context.Background()
 	for i := 0; i < 3; i++ {
 		b, err := cached.ByHash(ctx, "test", "component", "arch", "abc123")
@@ -44,7 +44,7 @@ func TestCached_ByHash(t *testing.T) {
 func TestCached_Pool(t *testing.T) {
 	u, ctr := countingServer(t, "/pool/component/p/pkg/pkg_1.0_amd64.deb")
 
-	cached := repo.NewCached(repo.NewUpstream(u))
+	cached := repo.NewCached(repo.NewUpstream(u), repo.NewLRUCacheStorage())
 	ctx := context.Background()
 	for i := 0; i < 3; i++ {
 		b, err := cached.Pool(ctx, "component", "pkg", "pkg_1.0_amd64.deb")

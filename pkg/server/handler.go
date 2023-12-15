@@ -21,15 +21,17 @@ func NewHandler() *Handler {
 		mux:   chi.NewRouter(),
 		repos: map[string]repo.Repo{},
 	}
-	h.mux.Use(middleware.Logger)
-
-	u, _ := url.Parse("https://deb.debian.org/debian")
-
-	h.repos["debian"] = repo.NewCached(repo.NewUpstream(*u))
-
+	h.mux.Use(middleware.RequestID)
+	h.mux.Use(Logger)
 	h.mux.Get("/{repo}/dists/{dist}/InRelease", h.InRelease)
 	h.mux.Get("/{repo}/dists/{dist}/{component}/binary-{architecture}/by-hash/{digestAlgo}/{digest}", h.ByHash)
 	h.mux.Get("/{repo}/pool/{component}/{p}/{package}/{filename}", h.Pool)
+
+	// FIXME: hacks should come from config
+	u, _ := url.Parse("https://deb.debian.org/debian")
+	h.repos["debian"] = repo.NewCached(repo.NewUpstream(*u), repo.NewFileCacheStorage("tmp"))
+	u, _ = url.Parse("https://deb.debian.org/debian-security")
+	h.repos["debian-security"] = repo.NewCached(repo.NewUpstream(*u), repo.NewFileCacheStorage("tmp"))
 	return h
 }
 
@@ -40,7 +42,11 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h Handler) InRelease(w http.ResponseWriter, r *http.Request) {
 	repoName := chi.URLParam(r, "repo")
 	dist := chi.URLParam(r, "dist")
-	slog.Info("InRelease", slog.String("path", r.URL.Path), slog.String("dist", dist))
+	slog.Info("handling InRelease",
+		slog.String("request_id", middleware.GetReqID(r.Context())),
+		slog.String("repo", repoName),
+		slog.String("dist", dist),
+	)
 
 	repo, ok := h.repos[repoName]
 	if !ok {
@@ -78,7 +84,14 @@ func (h Handler) ByHash(w http.ResponseWriter, r *http.Request) {
 	component := chi.URLParam(r, "component")
 	arch := chi.URLParam(r, "architecture")
 	digest := chi.URLParam(r, "digest")
-	slog.Info("ByHash", slog.String("path", r.URL.Path), slog.String("dist", dist), slog.String("component", component), slog.String("arch", arch), slog.String("digest", digest))
+	slog.Info("handling ByHash",
+		slog.String("request_id", middleware.GetReqID(r.Context())),
+		slog.String("repo", repoName),
+		slog.String("dist", dist),
+		slog.String("component", component),
+		slog.String("arch", arch),
+		slog.String("digest", digest),
+	)
 
 	res, err := repo.ByHash(r.Context(), dist, component, arch, digest)
 	if err != nil {
@@ -104,10 +117,17 @@ func (h Handler) Pool(w http.ResponseWriter, r *http.Request) {
 	component := chi.URLParam(r, "component")
 	pkg := chi.URLParam(r, "package")
 	filename := chi.URLParam(r, "filename")
-	slog.Info("Pool", slog.String("path", r.URL.Path), slog.String("component", component), slog.String("pkg", pkg), slog.String("filename", filename))
+	slog.Info("handling Pool",
+		slog.String("request_id", middleware.GetReqID(r.Context())),
+		slog.String("repo", repoName),
+		slog.String("component", component),
+		slog.String("package", pkg),
+		slog.String("filename", filename),
+	)
 
 	b, err := repo.Pool(r.Context(), component, pkg, filename)
 	if err != nil {
+		slog.Error("repo.Pool", slog.String("error", err.Error()))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
