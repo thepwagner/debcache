@@ -50,9 +50,6 @@ func NewRepo() (*Repo, error) {
 }
 
 func (r *Repo) InRelease(ctx context.Context, dist string) ([]byte, error) {
-
-	// TODO: organize into package lists, calculate digests
-
 	var buf bytes.Buffer
 	enc, err := clearsign.Encode(&buf, r.pk, nil)
 	if err != nil {
@@ -72,7 +69,7 @@ func (r *Repo) InRelease(ctx context.Context, dist string) ([]byte, error) {
 		"Description":   "Debian",
 	}
 
-	// Hack for initial end to end:
+	// FIXME: Hack for an initial end to end:
 	packages, err := r.Packages(ctx, "bookworm", "main", "amd64", repo.CompressionNone)
 	if err != nil {
 		return nil, err

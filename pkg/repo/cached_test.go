@@ -54,16 +54,16 @@ func TestCached_Pool(t *testing.T) {
 	}
 }
 
-func countingServer(t testing.TB, path string) (url.URL, *int64) {
-	t.Helper()
+func countingServer(tb testing.TB, path string) (url.URL, *int64) {
+	tb.Helper()
 
 	var counter int64
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, path, r.URL.Path)
+		assert.Equal(tb, path, r.URL.Path)
 		atomic.AddInt64(&counter, 1)
 		_, _ = w.Write(upstreamPayload)
 	}))
-	t.Cleanup(srv.Close)
+	tb.Cleanup(srv.Close)
 	u, _ := url.Parse(srv.URL)
 	return *u, &counter
 }

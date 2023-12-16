@@ -50,10 +50,10 @@ func ParseControlFile(in io.Reader) ([]Paragraph, error) {
 
 		// A line that matches "Key: Value" is a new field (Value may be empty)
 		if m := keyValueRE.FindStringSubmatch(line); len(m) > 0 {
-			key := string(m[1])
+			key := m[1]
 			currentKey = key
 
-			val := strings.TrimSpace(string(m[2]))
+			val := strings.TrimSpace(m[2])
 			currentGraph[key] = val
 			continue
 		}
@@ -68,9 +68,9 @@ func ParseControlFile(in io.Reader) ([]Paragraph, error) {
 			if len(currentGraph[currentKey]) > 0 {
 				prefix = "\n"
 			}
-			currentGraph[currentKey] += prefix + strings.TrimSpace(string(line))
+			currentGraph[currentKey] += prefix + strings.TrimSpace(line)
 		} else {
-			currentGraph[currentKey] += string(line)
+			currentGraph[currentKey] += line
 		}
 	}
 	if err := scanner.Err(); err != nil {

@@ -21,7 +21,7 @@ type FileSource struct {
 
 var _ PackageSource = (*FileSource)(nil)
 
-func (s FileSource) Packages(ctx context.Context, component, architecture string) ([]debian.Paragraph, time.Time, error) {
+func (s FileSource) Packages(_ context.Context, component, architecture string) ([]debian.Paragraph, time.Time, error) {
 	files, err := os.ReadDir(s.dir)
 	if err != nil {
 		return nil, time.Time{}, err
@@ -82,5 +82,4 @@ func addFileData(pkg debian.Paragraph, fn string, info fs.FileInfo) error {
 	pkg["MD5sum"] = fmt.Sprintf("%x", md5sum.Sum(nil))
 	pkg["SHA256"] = fmt.Sprintf("%x", sha256sum.Sum(nil))
 	return nil
-
 }

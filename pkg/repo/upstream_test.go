@@ -38,13 +38,13 @@ func TestUpstream_Pool(t *testing.T) {
 	require.Equal(t, upstreamPayload, res)
 }
 
-func assertingServer(t testing.TB, path string) url.URL {
-	t.Helper()
+func assertingServer(tb testing.TB, path string) url.URL {
+	tb.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, path, r.URL.Path)
+		assert.Equal(tb, path, r.URL.Path)
 		_, _ = w.Write(upstreamPayload)
 	}))
-	t.Cleanup(srv.Close)
+	tb.Cleanup(srv.Close)
 	u, _ := url.Parse(srv.URL)
 	return *u
 }
