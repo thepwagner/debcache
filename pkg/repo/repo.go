@@ -34,3 +34,14 @@ func ParseCompression(s string) Compression {
 		return CompressionNone
 	}
 }
+
+func (c Compression) Extension() string {
+	switch c {
+	case CompressionGZIP:
+		return ".gz"
+	case CompressionXZ:
+		return ".xz"
+	default:
+		return ""
+	}
+}

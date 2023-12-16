@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"net/url"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -18,7 +17,7 @@ type Handler struct {
 	repos map[string]repo.Repo
 }
 
-func NewHandler() *Handler {
+func NewHandler(cfg *Config) (*Handler, error) {
 	h := &Handler{
 		mux:   chi.NewRouter(),
 		repos: map[string]repo.Repo{},
@@ -33,18 +32,21 @@ func NewHandler() *Handler {
 
 	h.mux.Get("/{repo}/pool/{component}/{p}/{package}/{filename}", h.Pool)
 
+	for name, cfg := range cfg.Repos {
+		repo, err := BuildRepo(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("error building repo %q: %w", name, err)
+		}
+		h.repos[name] = repo
+	}
 	// FIXME: hacks should come from config
-	u, _ := url.Parse("https://deb.debian.org/debian")
-	h.repos["debian"] = repo.NewCached(repo.NewUpstream(*u), repo.NewFileCache("tmp"))
-	u, _ = url.Parse("https://deb.debian.org/debian-security")
-	h.repos["debian-security"] = repo.NewCached(repo.NewUpstream(*u), repo.NewFileCache("tmp"))
-
 	repo, err := dynamic.NewRepo()
 	if err != nil {
 		panic(err)
 	}
 	h.repos["dynamic"] = repo
-	return h
+
+	return h, nil
 }
 
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -100,7 +102,6 @@ func (h Handler) Packages(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	fmt.Println(r)
 
 	res, err := rep.Packages(r.Context(), dist, component, arch, compression)
 	if err != nil {

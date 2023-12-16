@@ -30,7 +30,7 @@ func (u Upstream) InRelease(ctx context.Context, dist string) ([]byte, error) {
 }
 
 func (u Upstream) Packages(ctx context.Context, dist, component, arch string, compression Compression) ([]byte, error) {
-	return u.get(ctx, "dists", dist, component, fmt.Sprintf("binary-%s", arch), "Packages"+string(compression))
+	return u.get(ctx, "dists", dist, component, fmt.Sprintf("binary-%s", arch), "Packages"+compression.Extension())
 }
 
 func (u Upstream) ByHash(ctx context.Context, dist, component, arch, digest string) ([]byte, error) {
@@ -46,7 +46,8 @@ func (u Upstream) Pool(ctx context.Context, component, pkg, filename string) ([]
 }
 
 func (u Upstream) get(ctx context.Context, path ...string) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.baseURL.JoinPath(path...).String(), nil)
+	reqURL := u.baseURL.JoinPath(path...).String()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
 	}
@@ -59,7 +60,7 @@ func (u Upstream) get(ctx context.Context, path ...string) ([]byte, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status from upstream: %s", resp.Status)
+		return nil, fmt.Errorf("unexpected status from upstream %s: %s", reqURL, resp.Status)
 	}
 
 	var buf bytes.Buffer

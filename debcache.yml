@@ -1,0 +1,16 @@
+server:
+  addr: ":8080"
+
+repos:
+  debian:
+    upstream:
+      url: https://deb.debian.org/debian
+      verify: false
+    cache:
+      url: file://./tmp/debian
+  debian-security:
+    upstream:
+      url: https://deb.debian.org/debian-security
+      verify: false
+    cache:
+      url: file://./tmp/debian-security
