@@ -28,6 +28,7 @@ type Repo struct {
 
 type PackageSource interface {
 	Packages(ctx context.Context, component, architecture string) ([]debian.Paragraph, time.Time, error)
+	Deb(ctx context.Context, filename string) ([]byte, error)
 }
 
 var _ repo.Repo = (*Repo)(nil)
@@ -44,8 +45,10 @@ func NewRepo() (*Repo, error) {
 	}
 
 	return &Repo{
-		pk:     key[0].PrivateKey,
-		Source: &FileSource{"tmp/pool/"},
+		pk: key[0].PrivateKey,
+		Source: &FileSource{
+			dir: "tmp/debs/",
+		},
 	}, nil
 }
 
@@ -70,6 +73,7 @@ func (r *Repo) InRelease(ctx context.Context, dist string) ([]byte, error) {
 	}
 
 	// FIXME: Hack for an initial end to end:
+
 	packages, err := r.Packages(ctx, "bookworm", "main", "amd64", repo.CompressionNone)
 	if err != nil {
 		return nil, err
@@ -112,6 +116,6 @@ func (r *Repo) ByHash(ctx context.Context, dist, component, arch, digest string)
 	return nil, nil
 }
 
-func (r *Repo) Pool(ctx context.Context, component, pkg, filename string) ([]byte, error) {
-	return nil, nil
+func (r *Repo) Pool(_ context.Context, _, _, filename string) ([]byte, error) {
+	return r.Source.Deb(context.Background(), filename)
 }

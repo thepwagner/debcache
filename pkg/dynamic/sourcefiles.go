@@ -55,6 +55,10 @@ func (s FileSource) Packages(_ context.Context, component, architecture string) 
 	return ret, latest, nil
 }
 
+func (s FileSource) Deb(_ context.Context, filename string) ([]byte, error) {
+	return os.ReadFile(filepath.Join(s.dir, filename))
+}
+
 func ParagraphFromDebFile(fn string) (*debian.Paragraph, error) {
 	f, err := os.Open(fn)
 	if err != nil {
@@ -77,7 +81,7 @@ func addFileData(pkg debian.Paragraph, fn string, info fs.FileInfo) error {
 	if _, err := io.Copy(io.MultiWriter(md5sum, sha256sum), f); err != nil {
 		return err
 	}
-	pkg["Filename"] = "/pool/" + info.Name()
+	pkg["Filename"] = "pool/main/p/pkg/" + info.Name()
 	pkg["Size"] = fmt.Sprintf("%d", info.Size())
 	pkg["MD5sum"] = fmt.Sprintf("%x", md5sum.Sum(nil))
 	pkg["SHA256"] = fmt.Sprintf("%x", sha256sum.Sum(nil))

@@ -48,6 +48,13 @@ func CacheFromConfig(src Repo, cfg CacheConfig) (*Cache, error) {
 		return nil, fmt.Errorf("unsupported cache scheme %q", u.Scheme)
 	}
 
+	// TODO: this assumes reads are clustered
+	// What if clients are pulling for multiple architectures? We don't want the InReleases file to expire and reference a new amd64/Packages, while the arm64/Pacakges is still cached.
+	// We need to flush `releases`, `packages` and `byHash` at the same time.
+	store.NamespaceTTL(releases, 4*time.Hour)
+	store.NamespaceTTL(packages, 4*time.Hour)
+	store.NamespaceTTL(byHash, 4*time.Hour)
+
 	return NewCache(src, store), nil
 }
 
