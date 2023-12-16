@@ -15,12 +15,6 @@ import (
 // Paragraph is a series of data fields.
 type Paragraph map[string]string
 
-type toParagraph interface {
-	Paragraph() (Paragraph, error)
-}
-
-func (p Paragraph) Paragraph() (Paragraph, error) { return p, nil }
-
 var keyValueRE = regexp.MustCompile(`^([^\s:]+):(.*)$`)
 
 // multilineKeys maintain newlines in their values.
@@ -84,13 +78,8 @@ func ParseControlFile(in io.Reader) ([]Paragraph, error) {
 }
 
 // WriteConfigFile writes a Debian control file.
-func WriteControlFile[P toParagraph](out io.Writer, graphs ...P) error {
-	for i, toGraph := range graphs {
-		graph, err := toGraph.Paragraph()
-		if err != nil {
-			return fmt.Errorf("converting to paragraph: %w", err)
-		}
-
+func WriteControlFile(out io.Writer, graphs ...Paragraph) error {
+	for i, graph := range graphs {
 		// Blank line after every paragraph as a separator (except the first)
 		if i > 0 {
 			if _, err := fmt.Fprintln(out); err != nil {

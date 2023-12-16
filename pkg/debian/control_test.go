@@ -11,6 +11,8 @@ import (
 )
 
 func TestParseControlFile(t *testing.T) {
+	t.Parallel()
+
 	cases := map[string]struct {
 		lines    []string
 		expected []debian.Paragraph
@@ -64,7 +66,9 @@ func TestParseControlFile(t *testing.T) {
 	}
 
 	for label, tc := range cases {
+		tc := tc
 		t.Run(label, func(t *testing.T) {
+			t.Parallel()
 			graphs, err := debian.ParseControlFile(strings.NewReader(strings.Join(tc.lines, "\n")))
 			require.NoError(t, err)
 			assert.Equal(t, tc.expected, graphs)
@@ -73,6 +77,8 @@ func TestParseControlFile(t *testing.T) {
 }
 
 func TestWriteControlFile(t *testing.T) {
+	t.Parallel()
+
 	cases := map[string]struct {
 		paragraphs []debian.Paragraph
 		expected   []string
@@ -137,13 +143,18 @@ func TestWriteControlFile(t *testing.T) {
 	}
 
 	for label, tc := range cases {
+		tc := tc
 		t.Run(label, func(t *testing.T) {
+			t.Parallel()
+
 			var buf bytes.Buffer
 			err := debian.WriteControlFile(&buf, tc.paragraphs...)
 			require.NoError(t, err)
 
+			// Matches expcetd bytes
 			assert.Equal(t, strings.Join(tc.expected, "\n"), buf.String())
 
+			// Can be parsed to produce the same input
 			parsed, err := debian.ParseControlFile(&buf)
 			require.NoError(t, err)
 			assert.Equal(t, tc.paragraphs, parsed)
