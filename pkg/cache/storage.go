@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 )
 
 type Key string
@@ -24,4 +25,5 @@ func (k Key) Namespace() Namespace {
 type Storage interface {
 	Get(ctx context.Context, key Key) ([]byte, bool)
 	Add(ctx context.Context, key Key, value []byte)
+	NamespaceTTL(namepace Namespace, ttl time.Duration)
 }

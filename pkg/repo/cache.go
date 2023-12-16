@@ -13,7 +13,7 @@ import (
 	"github.com/thepwagner/debcache/pkg/cache"
 )
 
-// Cache wraps a Repo with an LRU cache.
+// Cache wraps a Repo with a cache.
 type Cache struct {
 	src     Repo
 	storage cache.Storage
@@ -59,93 +59,89 @@ func NewCache(src Repo, storage cache.Storage) *Cache {
 }
 
 func (c Cache) InRelease(ctx context.Context, dist string) ([]byte, error) {
-	logAttrs := []any{
+	key := releases.Key(dist)
+	v, ok := c.storage.Get(ctx, key)
+	slog.Debug("cached InRelease",
 		slog.String("request_id", middleware.GetReqID(ctx)),
 		slog.String("dist", dist),
-	}
-	key := releases.Key(dist)
-	if v, ok := c.storage.Get(ctx, key); ok {
-		slog.Info("InRelease cache hit", logAttrs...)
+		slog.Bool("cache_hit", ok),
+	)
+	if ok {
 		return v, nil
 	}
-	slog.Info("InRelease cache miss", logAttrs...)
 
 	v, err := c.src.InRelease(ctx, dist)
 	if err != nil {
 		return nil, err
 	}
-
 	c.storage.Add(ctx, key, v)
 	return v, nil
 }
 
 func (c Cache) Packages(ctx context.Context, dist, component, arch string, compression Compression) ([]byte, error) {
-	logAttrs := []any{
+	key := packages.Key(strings.Join([]string{dist, component, arch, string(compression)}, " "))
+	v, ok := c.storage.Get(ctx, key)
+	slog.Debug("cached Packages",
 		slog.String("request_id", middleware.GetReqID(ctx)),
 		slog.String("dist", dist),
 		slog.String("component", component),
 		slog.String("arch", arch),
 		slog.String("compression", string(compression)),
-	}
-	key := packages.Key(strings.Join([]string{dist, component, arch, string(compression)}, " "))
-	if v, ok := c.storage.Get(ctx, key); ok {
-		slog.Info("Packages cache hit", logAttrs...)
+		slog.Bool("cache_hit", ok),
+	)
+	if ok {
 		return v, nil
 	}
-	slog.Info("Packages cache miss", logAttrs...)
 
 	v, err := c.src.Packages(ctx, dist, component, arch, compression)
 	if err != nil {
 		return nil, err
 	}
-
 	c.storage.Add(ctx, key, v)
 	return v, nil
 }
 
 func (c Cache) ByHash(ctx context.Context, dist string, component string, arch string, digest string) ([]byte, error) {
-	logAttrs := []any{
+	key := byHash.Key(strings.Join([]string{dist, component, arch, digest}, " "))
+	v, ok := c.storage.Get(ctx, key)
+	slog.Debug("cached ByHash",
 		slog.String("request_id", middleware.GetReqID(ctx)),
 		slog.String("dist", dist),
 		slog.String("component", component),
 		slog.String("arch", arch),
 		slog.String("digest", digest),
-	}
-	key := byHash.Key(strings.Join([]string{dist, component, arch, digest}, " "))
-	if v, ok := c.storage.Get(ctx, key); ok {
-		slog.Info("ByHash cache hit", logAttrs...)
+		slog.Bool("cache_hit", ok),
+	)
+	if ok {
 		return v, nil
 	}
-	slog.Info("ByHash cache miss", logAttrs...)
 
 	v, err := c.src.ByHash(ctx, dist, component, arch, digest)
 	if err != nil {
 		return nil, err
 	}
-
 	c.storage.Add(ctx, key, v)
 	return v, nil
 }
 
 func (c Cache) Pool(ctx context.Context, component string, pkg string, filename string) ([]byte, error) {
-	logAttrs := []any{
+	key := pool.Key(strings.Join([]string{component, pkg, filename}, " "))
+	v, ok := c.storage.Get(ctx, key)
+	slog.Debug("cached Pool",
 		slog.String("request_id", middleware.GetReqID(ctx)),
 		slog.String("component", component),
 		slog.String("pkg", pkg),
 		slog.String("filename", filename),
-	}
-	key := pool.Key(strings.Join([]string{component, pkg, filename}, " "))
-	if v, ok := c.storage.Get(ctx, key); ok {
-		slog.Info("Pool cache hit", logAttrs...)
+		slog.Bool("cache_hit", ok),
+	)
+	if ok {
 		return v, nil
 	}
-	slog.Info("Pool cache miss", logAttrs...)
 
 	v, err := c.src.Pool(ctx, component, pkg, filename)
 	if err != nil {
 		return nil, err
 	}
-
 	c.storage.Add(ctx, key, v)
 	return v, nil
 }
