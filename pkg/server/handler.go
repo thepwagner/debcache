@@ -33,7 +33,7 @@ func NewHandler(cfg *Config) (*Handler, error) {
 	h.mux.Get("/{repo}/pool/{component}/{p}/{package}/{filename}", h.Pool)
 
 	for name, cfg := range cfg.Repos {
-		repo, err := BuildRepo(cfg)
+		repo, err := BuildRepo(name, cfg)
 		if err != nil {
 			return nil, fmt.Errorf("error building repo %q: %w", name, err)
 		}

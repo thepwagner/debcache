@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -16,7 +17,21 @@ type Upstream struct {
 	client  *http.Client
 }
 
+type UpstreamConfig struct {
+	URL    string `yaml:"url"`
+	Verify bool   `yaml:"verify"`
+}
+
 var _ Repo = (*Upstream)(nil)
+
+func UpstreamFromConfig(cfg UpstreamConfig) (*Upstream, error) {
+	u, err := url.Parse(cfg.URL)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing upstream URL: %w", err)
+	}
+	slog.Debug("upstream repo", slog.String("url", u.String()))
+	return NewUpstream(*u), nil
+}
 
 func NewUpstream(baseURL url.URL) *Upstream {
 	return &Upstream{

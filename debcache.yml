@@ -7,10 +7,10 @@ repos:
       url: https://deb.debian.org/debian
       verify: false
     cache:
-      url: file://./tmp/debian
+      url: file://tmp/debian
   debian-security:
     upstream:
       url: https://deb.debian.org/debian-security
       verify: false
     cache:
-      url: file://./tmp/debian-security
+      url: file://tmp/debian-security

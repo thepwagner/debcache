@@ -2,7 +2,7 @@ package server
 
 import (
 	"fmt"
-	"net/url"
+	"log/slog"
 
 	"github.com/thepwagner/debcache/pkg/repo"
 )
@@ -17,34 +17,26 @@ type ServerConfig struct {
 }
 
 type RepoConfig struct {
-	Upstream RepoUpstreamConfig `yaml:"upstream"`
-	Cache    RepoCacheConfig    `yaml:"cache"`
+	Upstream repo.UpstreamConfig `yaml:"upstream"`
+	Cache    repo.CacheConfig    `yaml:"cache"`
 }
 
-type RepoUpstreamConfig struct {
-	URL    string `yaml:"url"`
-	Verify bool   `yaml:"verify"`
-}
+func BuildRepo(name string, cfg RepoConfig) (repo.Repo, error) {
+	slog.Debug("building repo", slog.String("repo", name))
 
-type RepoCacheConfig struct {
-	URL string `yaml:"url"`
-}
-
-func BuildRepo(cfg RepoConfig) (repo.Repo, error) {
 	var base repo.Repo
+	var err error
 	if cfg.Upstream.URL != "" {
-		u, err := url.Parse(cfg.Upstream.URL)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing upstream URL: %w", err)
-		}
-		base = repo.NewUpstream(*u)
-	}
-
-	if base == nil {
+		base, err = repo.UpstreamFromConfig(cfg.Upstream)
+	} // TODO: dynamic repos go here
+	if err != nil {
+		return nil, fmt.Errorf("error building base repo: %w", err)
+	} else if base == nil {
 		return nil, fmt.Errorf("no repository configured")
 	}
 
-	// TODO cache is a wrapper here?
-
-	return base, nil
+	if cfg.Cache.URL == "" {
+		return base, nil
+	}
+	return repo.CacheFromConfig(base, cfg.Cache)
 }

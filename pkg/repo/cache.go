@@ -2,16 +2,23 @@ package repo
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"net/url"
+	"path/filepath"
 	"strings"
 
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-// Cached wraps a Repo with an LRU cache.
-type Cached struct {
+// Cache wraps a Repo with an LRU cache.
+type Cache struct {
 	src     Repo
 	storage CacheStorage
+}
+
+type CacheConfig struct {
+	URL string `yaml:"url"`
 }
 
 type CacheStorage interface {
@@ -28,16 +35,35 @@ type CacheStorage interface {
 	PoolAdd(context.Context, string, []byte)
 }
 
-var _ Repo = (*Cached)(nil)
+var _ Repo = (*Cache)(nil)
 
-func NewCached(src Repo, storage CacheStorage) *Cached {
-	return &Cached{
+func CacheFromConfig(src Repo, cfg CacheConfig) (*Cache, error) {
+	u, err := url.Parse(cfg.URL)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing cache URL: %w", err)
+	}
+
+	var store CacheStorage
+	switch u.Scheme {
+	case "file":
+		p := filepath.Join(u.Hostname(), u.Path)
+		store = NewFileCache(p)
+		slog.Debug("decorating in file cache", slog.String("path", p))
+	default:
+		return nil, fmt.Errorf("unsupported cache scheme %q", u.Scheme)
+	}
+
+	return NewCache(src, store), nil
+}
+
+func NewCache(src Repo, storage CacheStorage) *Cache {
+	return &Cache{
 		src:     src,
 		storage: storage,
 	}
 }
 
-func (c Cached) InRelease(ctx context.Context, dist string) ([]byte, error) {
+func (c Cache) InRelease(ctx context.Context, dist string) ([]byte, error) {
 	logAttrs := []any{
 		slog.String("request_id", middleware.GetReqID(ctx)),
 		slog.String("dist", dist),
@@ -57,7 +83,7 @@ func (c Cached) InRelease(ctx context.Context, dist string) ([]byte, error) {
 	return v, nil
 }
 
-func (c Cached) Packages(ctx context.Context, dist, component, arch string, compression Compression) ([]byte, error) {
+func (c Cache) Packages(ctx context.Context, dist, component, arch string, compression Compression) ([]byte, error) {
 	logAttrs := []any{
 		slog.String("request_id", middleware.GetReqID(ctx)),
 		slog.String("dist", dist),
@@ -81,7 +107,7 @@ func (c Cached) Packages(ctx context.Context, dist, component, arch string, comp
 	return v, nil
 }
 
-func (c Cached) ByHash(ctx context.Context, dist string, component string, arch string, digest string) ([]byte, error) {
+func (c Cache) ByHash(ctx context.Context, dist string, component string, arch string, digest string) ([]byte, error) {
 	logAttrs := []any{
 		slog.String("request_id", middleware.GetReqID(ctx)),
 		slog.String("dist", dist),
@@ -105,7 +131,7 @@ func (c Cached) ByHash(ctx context.Context, dist string, component string, arch 
 	return v, nil
 }
 
-func (c Cached) Pool(ctx context.Context, component string, pkg string, filename string) ([]byte, error) {
+func (c Cache) Pool(ctx context.Context, component string, pkg string, filename string) ([]byte, error) {
 	logAttrs := []any{
 		slog.String("request_id", middleware.GetReqID(ctx)),
 		slog.String("component", component),
