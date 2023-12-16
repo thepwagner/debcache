@@ -10,50 +10,50 @@ import (
 	"time"
 )
 
-// FileCacheStorage stores cache to the filesystem.
-type FileCacheStorage struct {
+// FileCache stores cache to the filesystem.
+type FileCache struct {
 	dir string
 }
 
-var _ CacheStorage = (*FileCacheStorage)(nil)
+var _ CacheStorage = (*FileCache)(nil)
 
-func NewFileCacheStorage(dir string) FileCacheStorage {
-	return FileCacheStorage{dir: dir}
+func NewFileCache(dir string) FileCache {
+	return FileCache{dir: dir}
 }
 
-func (c FileCacheStorage) ReleaseGet(_ context.Context, key string) ([]byte, bool) {
+func (c FileCache) ReleaseGet(_ context.Context, key string) ([]byte, bool) {
 	return c.get("release", key, time.Hour)
 }
 
-func (c FileCacheStorage) ReleaseAdd(_ context.Context, key string, value []byte) {
+func (c FileCache) ReleaseAdd(_ context.Context, key string, value []byte) {
 	c.add("release", key, value)
 }
 
-func (c FileCacheStorage) PackagesGet(_ context.Context, key string) ([]byte, bool) {
+func (c FileCache) PackagesGet(_ context.Context, key string) ([]byte, bool) {
 	return c.get("packages", key, time.Hour)
 }
 
-func (c FileCacheStorage) PackagesAdd(_ context.Context, key string, value []byte) {
+func (c FileCache) PackagesAdd(_ context.Context, key string, value []byte) {
 	c.add("packages", key, value)
 }
 
-func (c FileCacheStorage) ByHashGet(_ context.Context, key string) ([]byte, bool) {
+func (c FileCache) ByHashGet(_ context.Context, key string) ([]byte, bool) {
 	return c.get("byhash", key, 0)
 }
 
-func (c FileCacheStorage) ByHashAdd(_ context.Context, key string, value []byte) {
+func (c FileCache) ByHashAdd(_ context.Context, key string, value []byte) {
 	c.add("byhash", key, value)
 }
 
-func (c FileCacheStorage) PoolGet(_ context.Context, key string) ([]byte, bool) {
+func (c FileCache) PoolGet(_ context.Context, key string) ([]byte, bool) {
 	return c.get("pool", key, 0)
 }
 
-func (c FileCacheStorage) PoolAdd(_ context.Context, key string, value []byte) {
+func (c FileCache) PoolAdd(_ context.Context, key string, value []byte) {
 	c.add("pool", key, value)
 }
 
-func (c FileCacheStorage) get(subDir, key string, ttl time.Duration) ([]byte, bool) {
+func (c FileCache) get(subDir, key string, ttl time.Duration) ([]byte, bool) {
 	p := filepath.Join(c.dir, subDir, key)
 	if ttl > 0 {
 		// Check the file's mtime and ignore if expired:
@@ -75,7 +75,7 @@ func (c FileCacheStorage) get(subDir, key string, ttl time.Duration) ([]byte, bo
 	return b, true
 }
 
-func (c FileCacheStorage) add(subDir, key string, value []byte) {
+func (c FileCache) add(subDir, key string, value []byte) {
 	p := filepath.Join(c.dir, subDir, key)
 	if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
 		slog.Error("FileCacheStorage.add mkdir error", slog.String("error", err.Error()))

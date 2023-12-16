@@ -35,9 +35,9 @@ func NewHandler() *Handler {
 
 	// FIXME: hacks should come from config
 	u, _ := url.Parse("https://deb.debian.org/debian")
-	h.repos["debian"] = repo.NewCached(repo.NewUpstream(*u), repo.NewFileCacheStorage("tmp"))
+	h.repos["debian"] = repo.NewCached(repo.NewUpstream(*u), repo.NewFileCache("tmp"))
 	u, _ = url.Parse("https://deb.debian.org/debian-security")
-	h.repos["debian-security"] = repo.NewCached(repo.NewUpstream(*u), repo.NewFileCacheStorage("tmp"))
+	h.repos["debian-security"] = repo.NewCached(repo.NewUpstream(*u), repo.NewFileCache("tmp"))
 
 	repo, err := dynamic.NewRepo()
 	if err != nil {

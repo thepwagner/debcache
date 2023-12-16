@@ -50,20 +50,21 @@ func (u Upstream) get(ctx context.Context, path ...string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
 	}
+	req.Header.Set("User-Agent", "debcache/1.0")
 
 	resp, err := u.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("upstream proxy: %w", err)
+		return nil, fmt.Errorf("performing request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("upstream proxy status: %s", resp.Status)
+		return nil, fmt.Errorf("unexpected status from upstream: %s", resp.Status)
 	}
 
 	var buf bytes.Buffer
 	if _, err := io.Copy(&buf, resp.Body); err != nil {
-		return nil, fmt.Errorf("upstream proxy read: %w", err)
+		return nil, fmt.Errorf("upstream read error: %w", err)
 	}
 	return buf.Bytes(), nil
 }
