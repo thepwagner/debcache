@@ -3,15 +3,17 @@ package repo_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
+	"github.com/thepwagner/debcache/pkg/cache"
 	"github.com/thepwagner/debcache/pkg/repo"
 )
 
 func TestCached_InRelease(t *testing.T) {
 	t.Parallel()
 	srv := countingServer(t, "/dists/test/InRelease")
-	cached := repo.NewCache(repo.NewUpstream(srv), repo.NewLRUCache())
+	cached := repo.NewCache(repo.NewUpstream(srv), testCacheStorage())
 
 	ctx := context.Background()
 	for i := 0; i < 3; i++ {
@@ -24,7 +26,7 @@ func TestCached_InRelease(t *testing.T) {
 func TestCached_Packages(t *testing.T) {
 	t.Parallel()
 	srv := countingServer(t, "/dists/test/component/binary-arch/Packages")
-	cached := repo.NewCache(repo.NewUpstream(srv), repo.NewLRUCache())
+	cached := repo.NewCache(repo.NewUpstream(srv), testCacheStorage())
 
 	ctx := context.Background()
 	for i := 0; i < 3; i++ {
@@ -37,7 +39,7 @@ func TestCached_Packages(t *testing.T) {
 func TestCached_ByHash(t *testing.T) {
 	t.Parallel()
 	srv := countingServer(t, "/dists/test/component/binary-arch/by-hash/SHA256/abc123")
-	cached := repo.NewCache(repo.NewUpstream(srv), repo.NewLRUCache())
+	cached := repo.NewCache(repo.NewUpstream(srv), testCacheStorage())
 
 	ctx := context.Background()
 	for i := 0; i < 3; i++ {
@@ -50,7 +52,7 @@ func TestCached_ByHash(t *testing.T) {
 func TestCached_Pool(t *testing.T) {
 	t.Parallel()
 	srv := countingServer(t, "/pool/component/p/pkg/pkg_1.0_amd64.deb")
-	cached := repo.NewCache(repo.NewUpstream(srv), repo.NewLRUCache())
+	cached := repo.NewCache(repo.NewUpstream(srv), testCacheStorage())
 
 	ctx := context.Background()
 	for i := 0; i < 3; i++ {
@@ -58,4 +60,8 @@ func TestCached_Pool(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, []byte("1"), b)
 	}
+}
+
+func testCacheStorage() cache.Storage {
+	return cache.NewLRUStorage(100, time.Minute)
 }
