@@ -3,8 +3,11 @@
 set -o pipefail
 
 rm -f dist/*.deb || true
-goreleaser release --clean --snapshot
+if git tag --points-at HEAD | grep -q .; then
+  goreleaser release --clean --skip publish
+else
+  goreleaser release --clean --snapshot
+fi
 
 ssh apt.pwagner.net 'mkdir -p dist/debcache && rm -f "dist/debcache/*.deb" || true'
 scp dist/*.deb apt.pwagner.net:dist/debcache/
-
