@@ -21,7 +21,7 @@ type FileSource struct {
 
 var _ PackageSource = (*FileSource)(nil)
 
-func (s FileSource) Packages(_ context.Context, component, architecture string) ([]debian.Paragraph, time.Time, error) {
+func (s FileSource) Packages(_ context.Context) (PackageList, time.Time, error) {
 	files, err := os.ReadDir(s.dir)
 	if err != nil {
 		return nil, time.Time{}, err
@@ -52,7 +52,11 @@ func (s FileSource) Packages(_ context.Context, component, architecture string) 
 		ret = append(ret, *pkg)
 	}
 
-	return ret, latest, nil
+	return PackageList{
+		Component("main"): {
+			Architecture("amd64"): ret,
+		},
+	}, latest, nil
 }
 
 func (s FileSource) Deb(_ context.Context, filename string) ([]byte, error) {

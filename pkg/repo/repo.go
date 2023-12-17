@@ -1,6 +1,13 @@
 package repo
 
-import "context"
+import (
+	"bytes"
+	"compress/gzip"
+	"context"
+	"fmt"
+
+	"github.com/ulikunitz/xz"
+)
 
 // Repo is a source for Debian packages.
 type Repo interface {
@@ -47,5 +54,40 @@ func (c Compression) Extension() string {
 		return ".xz"
 	default:
 		return ""
+	}
+}
+
+func (c Compression) Compress(data []byte) ([]byte, error) {
+	switch c {
+	case CompressionGZIP:
+		var buf bytes.Buffer
+		compressor := gzip.NewWriter(&buf)
+		if _, err := compressor.Write(data); err != nil {
+			return nil, err
+		}
+		if err := compressor.Close(); err != nil {
+			return nil, err
+		}
+		return buf.Bytes(), nil
+
+	case CompressionXZ:
+		var buf bytes.Buffer
+		compressor, err := xz.NewWriter(&buf)
+		if err != nil {
+			return nil, err
+		}
+		if _, err := compressor.Write(data); err != nil {
+			return nil, err
+		}
+		if err := compressor.Close(); err != nil {
+			return nil, err
+		}
+		return buf.Bytes(), nil
+
+	case CompressionNone:
+		return data, nil
+
+	default:
+		return nil, fmt.Errorf("unknown compression %q", c)
 	}
 }
