@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"net/url"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5/middleware"
@@ -86,7 +85,7 @@ func (c Cache) InRelease(ctx context.Context, dist string) ([]byte, error) {
 }
 
 func (c Cache) Packages(ctx context.Context, dist, component, arch string, compression Compression) ([]byte, error) {
-	key := packages.Key(strings.Join([]string{dist, component, arch, string(compression)}, " "))
+	key := packages.Key(dist, component, arch, compression.String())
 	v, ok := c.storage.Get(ctx, key)
 	slog.Debug("cached Packages",
 		slog.String("request_id", middleware.GetReqID(ctx)),
@@ -109,7 +108,7 @@ func (c Cache) Packages(ctx context.Context, dist, component, arch string, compr
 }
 
 func (c Cache) ByHash(ctx context.Context, dist string, component string, arch string, digest string) ([]byte, error) {
-	key := byHash.Key(strings.Join([]string{dist, component, arch, digest}, " "))
+	key := byHash.Key(dist, component, arch, digest)
 	v, ok := c.storage.Get(ctx, key)
 	slog.Debug("cached ByHash",
 		slog.String("request_id", middleware.GetReqID(ctx)),
@@ -132,7 +131,7 @@ func (c Cache) ByHash(ctx context.Context, dist string, component string, arch s
 }
 
 func (c Cache) Pool(ctx context.Context, component string, pkg string, filename string) ([]byte, error) {
-	key := pool.Key(strings.Join([]string{component, pkg, filename}, " "))
+	key := pool.Key(component, pkg, filename)
 	v, ok := c.storage.Get(ctx, key)
 	slog.Debug("cached Pool",
 		slog.String("request_id", middleware.GetReqID(ctx)),

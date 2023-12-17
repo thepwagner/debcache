@@ -35,6 +35,10 @@ func ParseCompression(s string) Compression {
 	}
 }
 
+func (c Compression) String() string {
+	return string(c)
+}
+
 func (c Compression) Extension() string {
 	switch c {
 	case CompressionGZIP:

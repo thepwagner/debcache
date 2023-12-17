@@ -12,28 +12,33 @@ import (
 	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/ProtonMail/go-crypto/openpgp/clearsign"
 	"github.com/ProtonMail/go-crypto/openpgp/packet"
+	"github.com/thepwagner/debcache/pkg/cache"
 	"github.com/thepwagner/debcache/pkg/debian"
 	"github.com/thepwagner/debcache/pkg/repo"
 )
 
-// Repo is dynamically generated from a PackageSource.
-type Repo struct {
-	pk *packet.PrivateKey
-
-	Release       debian.Paragraph
-	Components    []string
-	Architectures []string
-	Source        PackageSource
-}
-
+// PackageSource provides package data for the Repo.
 type PackageSource interface {
 	Packages(ctx context.Context, component, architecture string) ([]debian.Paragraph, time.Time, error)
 	Deb(ctx context.Context, filename string) ([]byte, error)
 }
 
+// Repo is dynamically generated from a PackageSource.
+type Repo struct {
+	pk *packet.PrivateKey
+
+	cache  cache.Storage
+	Source PackageSource
+}
+
+type RepoConfig struct {
+	SigningKey string
+}
+
 var _ repo.Repo = (*Repo)(nil)
 
-func NewRepo() (*Repo, error) {
+func NewRepo(cache cache.Storage) (*Repo, error) {
+	// FIXME: from config
 	keyIn, err := os.Open("tmp/key.asc")
 	if err != nil {
 		return nil, err
@@ -45,7 +50,8 @@ func NewRepo() (*Repo, error) {
 	}
 
 	return &Repo{
-		pk: key[0].PrivateKey,
+		pk:    key[0].PrivateKey,
+		cache: cache,
 		Source: &FileSource{
 			dir: "tmp/debs/",
 		},
@@ -99,11 +105,18 @@ func (r *Repo) InRelease(ctx context.Context, dist string) ([]byte, error) {
 }
 
 func (r *Repo) Packages(ctx context.Context, dist, component, arch string, compression repo.Compression) ([]byte, error) {
+	// Check cache for data with same compression:
+
+	// If compressed, check cache for uncompressed data:
+	// Else, compute and store to cache:
+
 	pkgs, latest, err := r.Source.Packages(ctx, component, arch)
 	if err != nil {
 		return nil, err
 	}
 	slog.Info("dynamic Packages", "latest", latest)
+
+	// TODO:
 
 	var buf bytes.Buffer
 	if err := debian.WriteControlFile(&buf, pkgs...); err != nil {
