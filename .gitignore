@@ -7,4 +7,5 @@
 *.out
 go.work
 
+/dist/
 /tmp/

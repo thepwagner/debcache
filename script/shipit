@@ -1,0 +1,10 @@
+#!/bin/bash -e
+
+set -o pipefail
+
+rm -f dist/*.deb || true
+goreleaser release --clean --snapshot
+
+ssh apt.pwagner.net 'mkdir -p dist/debcache && rm -f "dist/debcache/*.deb" || true'
+scp dist/*.deb apt.pwagner.net:dist/debcache/
+
