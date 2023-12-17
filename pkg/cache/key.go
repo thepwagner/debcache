@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -9,7 +8,17 @@ type Key string
 type Namespace string
 
 func (n Namespace) Key(key ...string) Key {
-	return Key(fmt.Sprintf("%s:::%s", n, strings.Join(key, " ")))
+	var sb strings.Builder
+	sb.WriteString(string(n))
+	sb.WriteString(":::")
+	for i, k := range key {
+		if i > 0 {
+			sb.WriteString(" ")
+		}
+		sb.WriteString(k)
+	}
+
+	return Key(sb.String())
 }
 
 func (k Key) Namespace() Namespace {

@@ -64,12 +64,12 @@ func NewCache(src Repo, storage cache.Storage) *Cache {
 	}
 }
 
-func (c Cache) InRelease(ctx context.Context, dist string) ([]byte, error) {
-	key := releases.Key(dist)
+func (c Cache) InRelease(ctx context.Context, dist Distribution) ([]byte, error) {
+	key := releases.Key(dist.String())
 	v, ok := c.storage.Get(ctx, key)
 	slog.Debug("cached InRelease",
 		slog.String("request_id", middleware.GetReqID(ctx)),
-		slog.String("dist", dist),
+		slog.Any("dist", dist),
 		slog.Bool("cache_hit", ok),
 	)
 	if ok {
@@ -84,14 +84,14 @@ func (c Cache) InRelease(ctx context.Context, dist string) ([]byte, error) {
 	return v, nil
 }
 
-func (c Cache) Packages(ctx context.Context, dist, component, arch string, compression Compression) ([]byte, error) {
-	key := packages.Key(dist, component, arch, compression.String())
+func (c Cache) Packages(ctx context.Context, dist Distribution, component Component, arch Architecture, compression Compression) ([]byte, error) {
+	key := packages.Key(dist.String(), component.String(), arch.String(), compression.String())
 	v, ok := c.storage.Get(ctx, key)
 	slog.Debug("cached Packages",
 		slog.String("request_id", middleware.GetReqID(ctx)),
-		slog.String("dist", dist),
-		slog.String("component", component),
-		slog.String("arch", arch),
+		slog.Any("dist", dist),
+		slog.Any("component", component),
+		slog.Any("arch", arch),
 		slog.String("compression", string(compression)),
 		slog.Bool("cache_hit", ok),
 	)
@@ -107,14 +107,14 @@ func (c Cache) Packages(ctx context.Context, dist, component, arch string, compr
 	return v, nil
 }
 
-func (c Cache) ByHash(ctx context.Context, dist string, component string, arch string, digest string) ([]byte, error) {
-	key := byHash.Key(dist, component, arch, digest)
+func (c Cache) ByHash(ctx context.Context, dist Distribution, component Component, arch Architecture, digest string) ([]byte, error) {
+	key := byHash.Key(dist.String(), component.String(), arch.String(), digest)
 	v, ok := c.storage.Get(ctx, key)
 	slog.Debug("cached ByHash",
 		slog.String("request_id", middleware.GetReqID(ctx)),
-		slog.String("dist", dist),
-		slog.String("component", component),
-		slog.String("arch", arch),
+		slog.Any("dist", dist),
+		slog.Any("component", component),
+		slog.Any("arch", arch),
 		slog.String("digest", digest),
 		slog.Bool("cache_hit", ok),
 	)
@@ -130,12 +130,12 @@ func (c Cache) ByHash(ctx context.Context, dist string, component string, arch s
 	return v, nil
 }
 
-func (c Cache) Pool(ctx context.Context, component string, pkg string, filename string) ([]byte, error) {
-	key := pool.Key(component, pkg, filename)
+func (c Cache) Pool(ctx context.Context, component Component, pkg, filename string) ([]byte, error) {
+	key := pool.Key(component.String(), pkg, filename)
 	v, ok := c.storage.Get(ctx, key)
 	slog.Debug("cached Pool",
 		slog.String("request_id", middleware.GetReqID(ctx)),
-		slog.String("component", component),
+		slog.Any("component", component),
 		slog.String("pkg", pkg),
 		slog.String("filename", filename),
 		slog.Bool("cache_hit", ok),

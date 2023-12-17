@@ -48,11 +48,11 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (h Handler) InRelease(w http.ResponseWriter, r *http.Request) {
 	repoName := chi.URLParam(r, "repo")
-	dist := chi.URLParam(r, "dist")
+	dist := repo.Distribution(chi.URLParam(r, "dist"))
 	slog.Info("handling InRelease",
 		slog.String("request_id", middleware.GetReqID(r.Context())),
 		slog.String("repo", repoName),
-		slog.String("dist", dist),
+		slog.Any("dist", dist),
 	)
 
 	repo, ok := h.repos[repoName]
@@ -77,16 +77,16 @@ func (h Handler) InRelease(w http.ResponseWriter, r *http.Request) {
 
 func (h Handler) Packages(w http.ResponseWriter, r *http.Request) {
 	repoName := chi.URLParam(r, "repo")
-	dist := chi.URLParam(r, "dist")
-	component := chi.URLParam(r, "component")
-	arch := chi.URLParam(r, "architecture")
+	dist := repo.Distribution(chi.URLParam(r, "dist"))
+	component := repo.Component(chi.URLParam(r, "component"))
+	arch := repo.Architecture(chi.URLParam(r, "architecture"))
 	compression := repo.ParseCompression(chi.URLParam(r, "compression"))
 	slog.Info("handling Packages",
 		slog.String("request_id", middleware.GetReqID(r.Context())),
 		slog.String("repo", repoName),
-		slog.String("dist", dist),
-		slog.String("component", component),
-		slog.String("arch", arch),
+		slog.Any("dist", dist),
+		slog.Any("component", component),
+		slog.Any("arch", arch),
 		slog.Any("compression", compression),
 	)
 
@@ -112,6 +112,10 @@ func (h Handler) Packages(w http.ResponseWriter, r *http.Request) {
 
 func (h Handler) ByHash(w http.ResponseWriter, r *http.Request) {
 	repoName := chi.URLParam(r, "repo")
+	dist := repo.Distribution(chi.URLParam(r, "dist"))
+	component := repo.Component(chi.URLParam(r, "component"))
+	arch := repo.Architecture(chi.URLParam(r, "architecture"))
+
 	repo, ok := h.repos[repoName]
 	if !ok {
 		http.NotFound(w, r)
@@ -123,16 +127,13 @@ func (h Handler) ByHash(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dist := chi.URLParam(r, "dist")
-	component := chi.URLParam(r, "component")
-	arch := chi.URLParam(r, "architecture")
 	digest := chi.URLParam(r, "digest")
 	slog.Info("handling ByHash",
 		slog.String("request_id", middleware.GetReqID(r.Context())),
 		slog.String("repo", repoName),
-		slog.String("dist", dist),
-		slog.String("component", component),
-		slog.String("arch", arch),
+		slog.Any("dist", dist),
+		slog.Any("component", component),
+		slog.Any("arch", arch),
 		slog.String("digest", digest),
 	)
 
@@ -151,19 +152,19 @@ func (h Handler) ByHash(w http.ResponseWriter, r *http.Request) {
 
 func (h Handler) Pool(w http.ResponseWriter, r *http.Request) {
 	repoName := chi.URLParam(r, "repo")
+	component := repo.Component(chi.URLParam(r, "component"))
 	repo, ok := h.repos[repoName]
 	if !ok {
 		http.NotFound(w, r)
 		return
 	}
 
-	component := chi.URLParam(r, "component")
 	pkg := chi.URLParam(r, "package")
 	filename := chi.URLParam(r, "filename")
 	slog.Info("handling Pool",
 		slog.String("request_id", middleware.GetReqID(r.Context())),
 		slog.String("repo", repoName),
-		slog.String("component", component),
+		slog.Any("component", component),
 		slog.String("package", pkg),
 		slog.String("filename", filename),
 	)

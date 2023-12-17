@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/thepwagner/debcache/pkg/debian"
 )
@@ -20,38 +21,42 @@ type FileSource struct {
 
 var _ PackageSource = (*FileSource)(nil)
 
-func (s FileSource) Packages(_ context.Context) (PackageList, error) {
+func (s FileSource) Packages(_ context.Context) (PackageList, time.Time, error) {
 	files, err := os.ReadDir(s.dir)
 	if err != nil {
-		return nil, err
+		return nil, time.Time{}, err
 	}
 
 	var ret []debian.Paragraph
+	var latest time.Time
 	for _, file := range files {
 		info, err := file.Info()
 		if err != nil {
-			return nil, err
+			return nil, time.Time{}, err
+		} else if mt := info.ModTime(); mt.After(latest) {
+			latest = mt
 		}
+
 		fn := filepath.Join(s.dir, file.Name())
 		pkg, err := ParagraphFromDebFile(fn)
 		if err != nil {
-			return nil, err
+			return nil, time.Time{}, err
 		} else if pkg == nil {
 			slog.Warn("no control file found", "file", fn)
 			continue
 		}
 
 		if err := addFileData(*pkg, fn, info); err != nil {
-			return nil, err
+			return nil, time.Time{}, err
 		}
 		ret = append(ret, *pkg)
 	}
 
 	return PackageList{
-		Component("main"): {
-			Architecture("amd64"): ret,
+		"main": {
+			"amd64": ret,
 		},
-	}, nil
+	}, latest, nil
 }
 
 func (s FileSource) Deb(_ context.Context, filename string) ([]byte, error) {

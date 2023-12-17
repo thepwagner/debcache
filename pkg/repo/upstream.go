@@ -40,24 +40,24 @@ func NewUpstream(baseURL url.URL) *Upstream {
 	}
 }
 
-func (u Upstream) InRelease(ctx context.Context, dist string) ([]byte, error) {
-	return u.get(ctx, "dists", dist, "InRelease")
+func (u Upstream) InRelease(ctx context.Context, dist Distribution) ([]byte, error) {
+	return u.get(ctx, "dists", dist.String(), "InRelease")
 }
 
-func (u Upstream) Packages(ctx context.Context, dist, component, arch string, compression Compression) ([]byte, error) {
-	return u.get(ctx, "dists", dist, component, fmt.Sprintf("binary-%s", arch), "Packages"+compression.Extension())
+func (u Upstream) Packages(ctx context.Context, dist Distribution, component Component, arch Architecture, compression Compression) ([]byte, error) {
+	return u.get(ctx, "dists", dist.String(), component.String(), fmt.Sprintf("binary-%s", arch), "Packages"+compression.Extension())
 }
 
-func (u Upstream) ByHash(ctx context.Context, dist, component, arch, digest string) ([]byte, error) {
-	return u.get(ctx, "dists", dist, component, fmt.Sprintf("binary-%s", arch), "by-hash", "SHA256", digest)
+func (u Upstream) ByHash(ctx context.Context, dist Distribution, component Component, arch Architecture, digest string) ([]byte, error) {
+	return u.get(ctx, "dists", dist.String(), component.String(), fmt.Sprintf("binary-%s", arch), "by-hash", "SHA256", digest)
 }
 
-func (u Upstream) Pool(ctx context.Context, component, pkg, filename string) ([]byte, error) {
+func (u Upstream) Pool(ctx context.Context, component Component, pkg, filename string) ([]byte, error) {
 	prefix := string(pkg[0])
 	if strings.HasPrefix(pkg, "lib") {
 		prefix = pkg[:4]
 	}
-	return u.get(ctx, "pool", component, prefix, pkg, filename)
+	return u.get(ctx, "pool", component.String(), prefix, pkg, filename)
 }
 
 func (u Upstream) get(ctx context.Context, path ...string) ([]byte, error) {

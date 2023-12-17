@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/ProtonMail/go-crypto/openpgp/packet"
 	"github.com/stretchr/testify/assert"
@@ -69,7 +70,7 @@ func TestRepo(t *testing.T) {
 	t.Run("Packages", func(t *testing.T) {
 		t.Parallel()
 
-		for _, arch := range []string{"amd64", "arm64"} {
+		for _, arch := range []repo.Architecture{"amd64", "arm64"} {
 			pkgs, err := r.Packages(ctx, dist, "main", arch, repo.CompressionNone)
 			require.NoError(t, err)
 
@@ -91,10 +92,11 @@ func TestRepo(t *testing.T) {
 
 type TestSource struct {
 	pkgs dynamic.PackageList
+	time time.Time
 }
 
-func (t TestSource) Packages(_ context.Context) (dynamic.PackageList, error) {
-	return t.pkgs, nil
+func (t TestSource) Packages(_ context.Context) (dynamic.PackageList, time.Time, error) {
+	return t.pkgs, t.time, nil
 }
 
 func (t TestSource) Deb(_ context.Context, _ string) ([]byte, error) {
