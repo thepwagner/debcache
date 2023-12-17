@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/lmittmann/tint"
-	"gopkg.in/yaml.v3"
 )
 
 func Run(ctx context.Context) error {
@@ -29,26 +28,7 @@ func Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return runHandler(ctx, cfg.Server.Addr, handler)
-}
-
-func loadConfig() (*Config, error) {
-	f, err := os.Open("debcache.yml")
-	if err != nil {
-		return nil, fmt.Errorf("error opening config: %w", err)
-	}
-	defer f.Close()
-
-	var cfg Config
-	if err := yaml.NewDecoder(f).Decode(&cfg); err != nil {
-		return nil, fmt.Errorf("error decoding config: %w", err)
-	}
-
-	if cfg.Server.Addr == "" {
-		cfg.Server.Addr = ":8080"
-	}
-
-	return &cfg, nil
+	return runHandler(ctx, cfg.Addr, handler)
 }
 
 func runHandler(ctx context.Context, addr string, handler http.Handler) error {

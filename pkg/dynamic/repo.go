@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
@@ -23,45 +25,60 @@ type PackageSource interface {
 
 // Repo is dynamically generated from a PackageSource.
 type Repo struct {
-	pk *packet.PrivateKey
+	key *packet.PrivateKey
 
-	Source PackageSource
+	src PackageSource
 }
 
 type RepoConfig struct {
-	SigningKey string
+	SigningKey     string `yaml:"signingKey"`
+	SigningKeyPath string `yaml:"signingKeyPath"`
 }
 
 var _ repo.Repo = (*Repo)(nil)
 
-func NewRepo() (*Repo, error) {
-	// FIXME: from config
-	keyIn, err := os.Open("tmp/key.asc")
-	if err != nil {
-		return nil, err
+func NewRepo(key *packet.PrivateKey, src PackageSource) *Repo {
+	return &Repo{
+		key: key,
+		src: src,
 	}
-	defer keyIn.Close()
-	key, err := openpgp.ReadArmoredKeyRing(keyIn)
+}
+
+func RepoFromConfig(cfg RepoConfig) (*Repo, error) {
+	var keyIn io.Reader
+	if cfg.SigningKey != "" {
+		keyIn = strings.NewReader(cfg.SigningKey)
+		slog.Debug("reading key from config")
+	} else if cfg.SigningKeyPath != "" {
+		f, err := os.Open(cfg.SigningKeyPath)
+		if err != nil {
+			return nil, err
+		}
+		defer f.Close()
+		keyIn = f
+		slog.Debug("reading key from file", slog.String("path", cfg.SigningKeyPath))
+	}
+	keyRing, err := openpgp.ReadArmoredKeyRing(keyIn)
 	if err != nil {
 		return nil, fmt.Errorf("decoding key: %w", err)
 	}
+	key := keyRing[0].PrivateKey
 
-	return &Repo{
-		pk: key[0].PrivateKey,
-		Source: &FileSource{
-			dir: "tmp/debs/",
-		},
-	}, nil
+	src := &FileSource{
+		dir: "tmp/debs/",
+	}
+
+	return NewRepo(key, src), nil
 }
 
 func (r *Repo) InRelease(ctx context.Context, dist string) ([]byte, error) {
 	var buf bytes.Buffer
-	enc, err := clearsign.Encode(&buf, r.pk, nil)
+	enc, err := clearsign.Encode(&buf, r.key, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	pkgs, _, err := r.Source.Packages(ctx)
+	pkgs, _, err := r.src.Packages(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +101,7 @@ func (r *Repo) InRelease(ctx context.Context, dist string) ([]byte, error) {
 }
 
 func (r *Repo) Packages(ctx context.Context, _, component, arch string, compression repo.Compression) ([]byte, error) {
-	pkgs, latest, err := r.Source.Packages(ctx)
+	pkgs, latest, err := r.src.Packages(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -109,5 +126,5 @@ func (r *Repo) ByHash(ctx context.Context, dist, component, arch, digest string)
 }
 
 func (r *Repo) Pool(_ context.Context, _, _, filename string) ([]byte, error) {
-	return r.Source.Deb(context.Background(), filename)
+	return r.src.Deb(context.Background(), filename)
 }

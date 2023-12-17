@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/thepwagner/debcache/pkg/dynamic"
 	"github.com/thepwagner/debcache/pkg/repo"
 )
 
@@ -39,12 +38,6 @@ func NewHandler(cfg *Config) (*Handler, error) {
 		}
 		h.repos[name] = repo
 	}
-	// FIXME: hacks should come from config
-	repo, err := dynamic.NewRepo()
-	if err != nil {
-		panic(err)
-	}
-	h.repos["dynamic"] = repo
 
 	return h, nil
 }

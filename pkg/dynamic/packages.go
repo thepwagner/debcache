@@ -36,8 +36,8 @@ type RenderedPackageList struct {
 
 func Render(pl PackageList, compressions ...repo.Compression) ([]RenderedPackageList, error) {
 	var ret []RenderedPackageList
-	for component, componentData := range pl {
-		for architecture, packages := range componentData {
+	for component, data := range pl {
+		for architecture, packages := range data {
 			var pkgRaw bytes.Buffer
 			if err := debian.WriteControlFile(&pkgRaw, packages...); err != nil {
 				return nil, err
@@ -75,53 +75,26 @@ func (pl PackageList) Release() (debian.Paragraph, error) {
 	}
 
 	release := debian.Paragraph{
-		"Origin":        "Debian",
-		"Label":         "Debian",
-		"Architectures": strings.Join(architectures, " "),
-		"Components":    strings.Join(components, " "),
-		// "Suite":    dist,
-		// "Codename": dist,
-		"Version": "12.4",
-		"Date":    time.Now().UTC().Format(time.RFC1123Z),
-		// "Acquire-By-Hash": "yes", <-- hash tag squad guals
-		"Description": "Debian",
+		"Origin":          "Debian",
+		"Label":           "Debian",
+		"Architectures":   strings.Join(architectures, " "),
+		"Components":      strings.Join(components, " "),
+		"Date":            time.Now().UTC().Format(time.RFC1123Z),
+		"Acquire-By-Hash": "yes",
+		"Description":     "Debian",
 	}
 
-	type digestEntry struct {
-		digest string
-		size   int64
-		path   string
+	files, err := Render(pl, repo.CompressionNone, repo.CompressionGZIP, repo.CompressionXZ)
+	if err != nil {
+		return nil, err
 	}
-	var digests []digestEntry
-	for component, componentData := range pl {
-		for architecture, packages := range componentData {
-			var pkgRaw bytes.Buffer
-			if err := debian.WriteControlFile(&pkgRaw, packages...); err != nil {
-				return nil, err
-			}
-
-			for _, compression := range []repo.Compression{repo.CompressionNone, repo.CompressionGZIP, repo.CompressionXZ} {
-				data, err := compression.Compress(pkgRaw.Bytes())
-				if err != nil {
-					return nil, err
-				}
-				digest := fmt.Sprintf("%x", sha256.Sum256(data))
-				digests = append(digests, digestEntry{
-					digest: digest,
-					size:   int64(len(data)),
-					path:   fmt.Sprintf("%s/binary-%s/Packages%s", component, architecture, compression.Extension()),
-				})
-			}
-		}
-	}
-
-	sort.Slice(digests, func(i, j int) bool {
-		return digests[i].path < digests[j].path
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].Path < files[j].Path
 	})
 
 	var sha256 strings.Builder
-	for _, digest := range digests {
-		sha256.WriteString(fmt.Sprintf(" %s  %d %s\n", digest.digest, digest.size, digest.path))
+	for _, digest := range files {
+		sha256.WriteString(fmt.Sprintf(" %s  %d %s\n", digest.Digest, digest.Size, digest.Path))
 	}
 	release["SHA256"] = sha256.String()
 

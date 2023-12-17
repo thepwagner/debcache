@@ -1,5 +1,4 @@
-server:
-  addr: ":8080"
+addr: ":8080"
 
 repos:
   debian:
@@ -14,3 +13,6 @@ repos:
       verify: false
     cache:
       url: file://tmp/debian-security
+  dynamic:
+    dynamic:
+      signingKeyPath: "tmp/key.asc"
