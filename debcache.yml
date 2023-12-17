@@ -6,13 +6,13 @@ repos:
       url: https://deb.debian.org/debian
       verify: false
     cache:
-      url: file://tmp/debian
+      url: file:///var/cache/debcache/debian
   debian-security:
     upstream:
       url: https://deb.debian.org/debian-security
       verify: false
     cache:
-      url: file://tmp/debian-security
+      url: file:///var/cache/debcache/debian
   dynamic:
     dynamic:
       signingKeyPath: "tmp/key.asc"

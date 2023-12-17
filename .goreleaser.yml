@@ -18,3 +18,10 @@ nfpms:
     maintainer: Pete Wagner <deb@pwagner.net>
     formats:
       - deb
+    contents:
+      - src: systemd/debcache.service
+        dst: /etc/systemd/system/debcache.service
+      - dst: /var/cache/debcache
+        type: dir
+        file_info:
+          mode: 0700

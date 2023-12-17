@@ -25,7 +25,13 @@ type RepoConfig struct {
 func loadConfig() (*Config, error) {
 	var cfg Config
 
-	f, err := os.Open("debcache.yml")
+	var cfgPath string
+	if p, ok := os.LookupEnv("DEBCACHE_CONFIG"); ok {
+		cfgPath = p
+	} else {
+		cfgPath = "debcache.yml"
+	}
+	f, err := os.Open(cfgPath)
 	if err == nil {
 		defer f.Close()
 		if err := yaml.NewDecoder(f).Decode(&cfg); err != nil {

@@ -1,0 +1,14 @@
+[Unit]
+Description=Debian cache
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Restart=on-failure
+Type=simple
+Environment=DEBCACHE_CONFIG=/etc/debcache/config.yaml
+ExecStart=/usr/bin/debcache
+User=deploy
+
+[Install]
+WantedBy=multi-user.target
