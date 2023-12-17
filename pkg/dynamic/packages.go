@@ -73,6 +73,8 @@ func (pl PackageList) Release() (debian.Paragraph, error) {
 	for arch := range archIndex {
 		architectures = append(architectures, string(arch))
 	}
+	sort.Strings(components)
+	sort.Strings(architectures)
 
 	release := debian.Paragraph{
 		"Origin":          "Debian",

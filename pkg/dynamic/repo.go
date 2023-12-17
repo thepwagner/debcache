@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/ProtonMail/go-crypto/openpgp/clearsign"
@@ -19,7 +18,7 @@ import (
 
 // PackageSource provides package data for the Repo.
 type PackageSource interface {
-	Packages(ctx context.Context) (PackageList, time.Time, error)
+	Packages(ctx context.Context) (PackageList, error)
 	Deb(ctx context.Context, filename string) ([]byte, error)
 }
 
@@ -45,30 +44,39 @@ func NewRepo(key *packet.PrivateKey, src PackageSource) *Repo {
 }
 
 func RepoFromConfig(cfg RepoConfig) (*Repo, error) {
-	var keyIn io.Reader
+	var key *packet.PrivateKey
+	var err error
 	if cfg.SigningKey != "" {
-		keyIn = strings.NewReader(cfg.SigningKey)
 		slog.Debug("reading key from config")
+		key, err = KeyFromReader(strings.NewReader(cfg.SigningKey))
 	} else if cfg.SigningKeyPath != "" {
-		f, err := os.Open(cfg.SigningKeyPath)
+		slog.Debug("reading key from file", slog.String("path", cfg.SigningKeyPath))
+		var f io.ReadCloser
+		f, err = os.Open(cfg.SigningKeyPath)
 		if err != nil {
 			return nil, err
 		}
 		defer f.Close()
-		keyIn = f
-		slog.Debug("reading key from file", slog.String("path", cfg.SigningKeyPath))
+		key, err = KeyFromReader(f)
 	}
-	keyRing, err := openpgp.ReadArmoredKeyRing(keyIn)
 	if err != nil {
-		return nil, fmt.Errorf("decoding key: %w", err)
+		return nil, err
 	}
-	key := keyRing[0].PrivateKey
 
+	// FIXME: more config here plz
 	src := &FileSource{
 		dir: "tmp/debs/",
 	}
 
 	return NewRepo(key, src), nil
+}
+
+func KeyFromReader(in io.Reader) (*packet.PrivateKey, error) {
+	keyRing, err := openpgp.ReadArmoredKeyRing(in)
+	if err != nil {
+		return nil, fmt.Errorf("decoding key: %w", err)
+	}
+	return keyRing[0].PrivateKey, nil
 }
 
 func (r *Repo) InRelease(ctx context.Context, dist string) ([]byte, error) {
@@ -78,7 +86,7 @@ func (r *Repo) InRelease(ctx context.Context, dist string) ([]byte, error) {
 		return nil, err
 	}
 
-	pkgs, _, err := r.src.Packages(ctx)
+	pkgs, err := r.src.Packages(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -101,11 +109,11 @@ func (r *Repo) InRelease(ctx context.Context, dist string) ([]byte, error) {
 }
 
 func (r *Repo) Packages(ctx context.Context, _, component, arch string, compression repo.Compression) ([]byte, error) {
-	pkgs, latest, err := r.src.Packages(ctx)
+	pkgs, err := r.src.Packages(ctx)
 	if err != nil {
 		return nil, err
 	}
-	slog.Info("dynamic Packages", "latest", latest)
+	slog.Info("dynamic Packages")
 	componentData := pkgs[Component(component)]
 	if componentData == nil {
 		return nil, nil
