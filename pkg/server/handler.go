@@ -33,7 +33,7 @@ func NewHandler(cfg *Config) (*Handler, error) {
 	h.mux.Get("/{repo}/dists/{dist}/{component}/binary-{architecture}/Packages{compression:(.[gx]z|)}", h.Packages)
 	h.mux.Get("/{repo}/dists/{dist}/{component}/binary-{architecture}/by-hash/{digestAlgo}/{digest}", h.ByHash)
 
-	h.mux.Get("/{repo}/pool/{component}/{p}/{package}/{filename}", h.Pool)
+	h.mux.Get("/{repo}/pool/{component}/{p}/{package}/*", h.Pool)
 
 	for name, cfg := range cfg.Repos {
 		repo, err := BuildRepo(name, cfg)
@@ -203,7 +203,7 @@ func (h Handler) Pool(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pkg := chi.URLParam(r, "package")
-	filename := chi.URLParam(r, "filename")
+	filename := chi.URLParam(r, "*")
 	slog.Info("handling Pool",
 		slog.String("request_id", middleware.GetReqID(r.Context())),
 		slog.String("repo", repoName),
