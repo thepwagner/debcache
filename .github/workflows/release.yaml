@@ -1,0 +1,17 @@
+name: Release
+
+on:
+  push:
+    tags: [ 'v*.*.*' ]
+    
+
+permissions: {}
+
+jobs:
+  build:
+    uses: thepwagner-org/actions/.github/workflows/golang-release.yaml@golang-release
+    with:
+      docker: true
+    permissions:
+      contents: read
+      packages: write
