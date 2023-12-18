@@ -1,6 +1,3 @@
-before:
-  hooks:
-    - go mod tidy
 builds:
   - env:
       - CGO_ENABLED=0
@@ -9,9 +6,6 @@ builds:
     goarch:
       - amd64
     main: ./
-
-archives:
-  - format: binary
 
 nfpms:
   - id: goreleaser
@@ -31,4 +25,4 @@ dockers:
     dockerfile: Containerfile.goreleaser
     image_templates:
       - "ghcr.io/thepwagner-org/debcache:latest"
-
+      - "ghcr.io/thepwagner-org/debcache:{{ .Tag }}"
