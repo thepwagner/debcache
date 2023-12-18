@@ -40,6 +40,10 @@ type Repo struct {
 type RepoConfig struct {
 	SigningKey     string `yaml:"signingKey"`
 	SigningKeyPath string `yaml:"signingKeyPath"`
+
+	Files struct {
+		Directory string `yaml:"dir"`
+	} `yaml:"files"`
 }
 
 var _ repo.Repo = (*Repo)(nil)
@@ -71,9 +75,14 @@ func RepoFromConfig(cfg RepoConfig) (*Repo, error) {
 		return nil, err
 	}
 
-	// FIXME: more config here plz
-	src := &FileSource{
-		dir: "tmp/debs/",
+	var src PackageSource
+	if cfg.Files.Directory != "" {
+		src = &FileSource{
+			dir: cfg.Files.Directory,
+		}
+	}
+	if src == nil {
+		return nil, fmt.Errorf("no source configured")
 	}
 
 	return NewRepo(key, src), nil
