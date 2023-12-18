@@ -1,6 +1,6 @@
 module github.com/thepwagner/debcache
 
-go 1.21.5
+go 1.21
 
 require (
 	github.com/ProtonMail/go-crypto v0.0.0-20230923063757-afb1ddc0824c
