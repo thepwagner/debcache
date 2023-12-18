@@ -84,3 +84,7 @@ func (u Upstream) get(ctx context.Context, path ...string) ([]byte, error) {
 	}
 	return buf.Bytes(), nil
 }
+
+func (u Upstream) SigningKeyPEM() ([]byte, error) {
+	return nil, nil
+}

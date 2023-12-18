@@ -19,8 +19,9 @@ var keyValueRE = regexp.MustCompile(`^([^\s:]+):(.*)$`)
 
 // multilineKeys maintain newlines in their values.
 var multilineKeys = map[string]struct{}{
-	"MD5Sum": {},
-	"SHA256": {},
+	"MD5Sum":    {},
+	"SHA256":    {},
+	"Signed-By": {},
 }
 
 // ParseControlFile parses a Debian control file.
@@ -108,6 +109,12 @@ func WriteControlFile(out io.Writer, graphs ...Paragraph) error {
 			if keyI == "MD5Sum" {
 				return false
 			} else if keyJ == "MD5Sum" {
+				return true
+			}
+
+			if keyI == "Signed-By" {
+				return false
+			} else if keyJ == "Signed-By" {
 				return true
 			}
 			return strings.Compare(keys[i], keys[j]) < 0

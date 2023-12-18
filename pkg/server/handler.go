@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/thepwagner/debcache/pkg/debian"
 	"github.com/thepwagner/debcache/pkg/repo"
 )
 
@@ -22,7 +23,10 @@ func NewHandler(cfg *Config) (*Handler, error) {
 		repos: map[string]repo.Repo{},
 	}
 	h.mux.Use(middleware.RequestID)
+	h.mux.Use(middleware.RealIP)
 	h.mux.Use(Logger)
+	h.mux.Get("/{repo}/repo.source", h.RepoSource)
+
 	h.mux.Get("/{repo}/dists/{dist}/InRelease", h.InRelease)
 
 	h.mux.Get("/{repo}/dists/{dist}/{component}/binary-{architecture}/Packages", h.Packages)
@@ -44,6 +48,45 @@ func NewHandler(cfg *Config) (*Handler, error) {
 
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.mux.ServeHTTP(w, r)
+}
+
+func (h Handler) RepoSource(w http.ResponseWriter, r *http.Request) {
+	repoName := chi.URLParam(r, "repo")
+	slog.Info("handling Key",
+		slog.String("request_id", middleware.GetReqID(r.Context())),
+		slog.String("repo", repoName),
+	)
+
+	repo, ok := h.repos[repoName]
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+
+	key, err := repo.SigningKeyPEM()
+	if err != nil {
+		slog.Error("repo.SigningKeyPEM", slog.String("error", err.Error()))
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(key) == 0 {
+		http.NotFound(w, r)
+		return
+	}
+
+	r.URL.Scheme = "http"
+	r.URL.Host = r.Host
+	r.URL.Path = ""
+
+	repoGraph := debian.Paragraph{
+		"Types":      "deb",
+		"URIs":       r.URL.JoinPath(repoName).String(),
+		"Suites":     "bookworm",
+		"Components": "main",
+		"Signed-By":  string(key),
+	}
+
+	_ = debian.WriteControlFile(w, repoGraph)
 }
 
 func (h Handler) InRelease(w http.ResponseWriter, r *http.Request) {

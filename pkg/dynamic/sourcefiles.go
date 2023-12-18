@@ -22,34 +22,36 @@ type FileSource struct {
 var _ PackageSource = (*FileSource)(nil)
 
 func (s FileSource) Packages(_ context.Context) (PackageList, time.Time, error) {
-	files, err := os.ReadDir(s.dir)
-	if err != nil {
-		return nil, time.Time{}, err
-	}
-
 	var ret []debian.Paragraph
 	var latest time.Time
-	for _, file := range files {
-		info, err := file.Info()
+	err := filepath.Walk(s.dir, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
-			return nil, time.Time{}, err
-		} else if mt := info.ModTime(); mt.After(latest) {
+			return err
+		}
+		if info.IsDir() || filepath.Ext(info.Name()) != ".deb" {
+			return nil
+		}
+
+		if mt := info.ModTime(); mt.After(latest) {
 			latest = mt
 		}
 
-		fn := filepath.Join(s.dir, file.Name())
-		pkg, err := ParagraphFromDebFile(fn)
+		pkg, err := ParagraphFromDebFile(path)
 		if err != nil {
-			return nil, time.Time{}, err
+			return err
 		} else if pkg == nil {
-			slog.Warn("no control file found", "file", fn)
-			continue
+			slog.Warn("no control file found", "file", path)
+			return nil
 		}
 
-		if err := addFileData(*pkg, fn, info); err != nil {
-			return nil, time.Time{}, err
+		if err := s.addFileData(*pkg, path, info); err != nil {
+			return err
 		}
 		ret = append(ret, *pkg)
+		return nil
+	})
+	if err != nil {
+		return nil, time.Time{}, err
 	}
 
 	return PackageList{
@@ -73,7 +75,7 @@ func ParagraphFromDebFile(fn string) (*debian.Paragraph, error) {
 	return debian.ParagraphFromDeb(f)
 }
 
-func addFileData(pkg debian.Paragraph, fn string, info fs.FileInfo) error {
+func (s FileSource) addFileData(pkg debian.Paragraph, fn string, info fs.FileInfo) error {
 	f, err := os.Open(fn)
 	if err != nil {
 		return err
@@ -85,7 +87,13 @@ func addFileData(pkg debian.Paragraph, fn string, info fs.FileInfo) error {
 	if _, err := io.Copy(io.MultiWriter(md5sum, sha256sum), f); err != nil {
 		return err
 	}
-	pkg["Filename"] = "pool/main/p/pkg/" + info.Name()
+
+	rel, err := filepath.Rel(s.dir, fn)
+	if err != nil {
+		return err
+	}
+
+	pkg["Filename"] = "pool/main/p/pkg/" + rel
 	pkg["Size"] = fmt.Sprintf("%d", info.Size())
 	pkg["MD5sum"] = fmt.Sprintf("%x", md5sum.Sum(nil))
 	pkg["SHA256"] = fmt.Sprintf("%x", sha256sum.Sum(nil))

@@ -29,4 +29,7 @@ type Repo interface {
 
 	// Pool fetches a package from the pool.
 	Pool(ctx context.Context, component Component, pkg, filename string) ([]byte, error)
+
+	// SigningKeyPEM returns the signing key in PEM format.
+	SigningKeyPEM() ([]byte, error)
 }

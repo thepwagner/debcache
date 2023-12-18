@@ -151,3 +151,7 @@ func (c Cache) Pool(ctx context.Context, component Component, pkg, filename stri
 	c.storage.Add(ctx, key, v)
 	return v, nil
 }
+
+func (c Cache) SigningKeyPEM() ([]byte, error) {
+	return c.src.SigningKeyPEM()
+}

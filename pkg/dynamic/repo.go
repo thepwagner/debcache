@@ -14,8 +14,8 @@ import (
 	"time"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
+	"github.com/ProtonMail/go-crypto/openpgp/armor"
 	"github.com/ProtonMail/go-crypto/openpgp/clearsign"
-	"github.com/ProtonMail/go-crypto/openpgp/packet"
 	"github.com/thepwagner/debcache/pkg/debian"
 	"github.com/thepwagner/debcache/pkg/repo"
 )
@@ -28,7 +28,7 @@ type PackageSource interface {
 
 // Repo is dynamically generated from a PackageSource.
 type Repo struct {
-	key *packet.PrivateKey
+	entity *openpgp.Entity
 
 	src PackageSource
 
@@ -48,19 +48,19 @@ type RepoConfig struct {
 
 var _ repo.Repo = (*Repo)(nil)
 
-func NewRepo(key *packet.PrivateKey, src PackageSource) *Repo {
+func NewRepo(entity *openpgp.Entity, src PackageSource) *Repo {
 	return &Repo{
-		key: key,
-		src: src,
+		entity: entity,
+		src:    src,
 	}
 }
 
 func RepoFromConfig(cfg RepoConfig) (*Repo, error) {
-	var key *packet.PrivateKey
+	var entity *openpgp.Entity
 	var err error
 	if cfg.SigningKey != "" {
 		slog.Debug("reading key from config")
-		key, err = KeyFromReader(strings.NewReader(cfg.SigningKey))
+		entity, err = EntityFromReader(strings.NewReader(cfg.SigningKey))
 	} else if cfg.SigningKeyPath != "" {
 		slog.Debug("reading key from file", slog.String("path", cfg.SigningKeyPath))
 		var f io.ReadCloser
@@ -69,11 +69,12 @@ func RepoFromConfig(cfg RepoConfig) (*Repo, error) {
 			return nil, err
 		}
 		defer f.Close()
-		key, err = KeyFromReader(f)
+		entity, err = EntityFromReader(f)
 	}
 	if err != nil {
 		return nil, err
 	}
+	slog.Debug("key loaded", slog.String("fingerprint", fmt.Sprintf("%x", entity.PrimaryKey.Fingerprint)))
 
 	var src PackageSource
 	if cfg.Files.Directory != "" {
@@ -85,15 +86,15 @@ func RepoFromConfig(cfg RepoConfig) (*Repo, error) {
 		return nil, fmt.Errorf("no source configured")
 	}
 
-	return NewRepo(key, src), nil
+	return NewRepo(entity, src), nil
 }
 
-func KeyFromReader(in io.Reader) (*packet.PrivateKey, error) {
+func EntityFromReader(in io.Reader) (*openpgp.Entity, error) {
 	keyRing, err := openpgp.ReadArmoredKeyRing(in)
 	if err != nil {
 		return nil, fmt.Errorf("decoding key: %w", err)
 	}
-	return keyRing[0].PrivateKey, nil
+	return keyRing[0], nil
 }
 
 func (r *Repo) InRelease(ctx context.Context, dist repo.Distribution) ([]byte, error) {
@@ -126,6 +127,21 @@ func (r *Repo) ByHash(ctx context.Context, dist repo.Distribution, _ repo.Compon
 
 func (r *Repo) Pool(_ context.Context, _ repo.Component, _, filename string) ([]byte, error) {
 	return r.src.Deb(context.Background(), filename)
+}
+
+func (r *Repo) SigningKeyPEM() ([]byte, error) {
+	var buf bytes.Buffer
+	w, err := armor.Encode(&buf, openpgp.PublicKeyType, nil)
+	if err != nil {
+		return nil, err
+	}
+	if err := r.entity.Serialize(w); err != nil {
+		return nil, err
+	}
+	if err := w.Close(); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
 func (r *Repo) render(ctx context.Context, dist repo.Distribution) error {
@@ -249,7 +265,7 @@ func (r *Repo) renderPackages(pkgs PackageList, dist repo.Distribution) (*Render
 
 	// Sign the release:
 	var inRelease bytes.Buffer
-	enc, err := clearsign.Encode(&inRelease, r.key, nil)
+	enc, err := clearsign.Encode(&inRelease, r.entity.PrivateKey, nil)
 	if err != nil {
 		return nil, err
 	}

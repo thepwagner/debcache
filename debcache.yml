@@ -16,3 +16,5 @@ repos:
   dynamic:
     dynamic:
       signingKeyPath: "tmp/key.asc"
+      files:
+        dir: tmp/debs/

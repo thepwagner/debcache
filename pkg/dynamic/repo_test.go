@@ -108,7 +108,7 @@ func testKey(tb testing.TB) *packet.PrivateKey {
 	f, err := os.Open("testdata/key.asc")
 	require.NoError(tb, err)
 	defer f.Close()
-	k, err := dynamic.KeyFromReader(f)
+	k, err := dynamic.EntityFromReader(f)
 	require.NoError(tb, err)
 	return k
 }
