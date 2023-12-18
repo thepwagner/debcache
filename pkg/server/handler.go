@@ -74,7 +74,7 @@ func (h Handler) RepoSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.URL.Scheme = "http"
+	r.URL.Scheme = "https"
 	r.URL.Host = r.Host
 	r.URL.Path = ""
 
