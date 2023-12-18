@@ -13,5 +13,7 @@ jobs:
     permissions:
       contents: read
       packages: write # TODO: why do i need this?
+    with:
+      docker: true
     secrets:
       token: ${{secrets.WAPWAGNER_TOKEN}}
