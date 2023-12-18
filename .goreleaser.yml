@@ -25,3 +25,10 @@ nfpms:
         type: dir
         file_info:
           mode: 0700
+
+dockers:
+  - use: buildx
+    dockerfile: Containerfile.goreleaser
+    image_templates:
+      - "ghcr.io/thepwagner-org/debcache:latest"
+      - "ghcr.io/thepwagner-org/debcache:{{ .Tag }}"
