@@ -19,7 +19,7 @@ nfpms:
     formats:
       - deb
     contents:
-      - src: systemd/debcache.service
+      - src: debian/debcache.service
         dst: /etc/systemd/system/debcache.service
       - dst: /var/cache/debcache
         type: dir

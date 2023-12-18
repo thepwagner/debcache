@@ -12,9 +12,9 @@ import (
 
 func TestLRUStorage(t *testing.T) {
 	t.Parallel()
-
-	lru := cache.NewLRUStorage(100, time.Minute)
-	testCache(t, lru)
+	testCache(t, func() cache.Storage {
+		return cache.NewLRUStorage(100, time.Minute)
+	})
 }
 
 func TestLRUStorage_Eviction(t *testing.T) {
