@@ -9,7 +9,7 @@ permissions: {}
 
 jobs:
   build:
-    uses: thepwagner-org/actions/.github/workflows/golang-release.yaml@golang-release
+    uses: thepwagner-org/actions/.github/workflows/golang-release.yaml@aa08dc4b97008eafd33fa593024663ef59693e71 # v2.7.0
     permissions:
       contents: write
     with:
