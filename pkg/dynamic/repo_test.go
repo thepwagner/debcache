@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ProtonMail/go-crypto/openpgp/packet"
+	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/thepwagner/debcache/pkg/dynamic"
@@ -103,12 +103,12 @@ func (t TestSource) Deb(_ context.Context, _ string) ([]byte, error) {
 	return nil, nil
 }
 
-func testKey(tb testing.TB) *packet.PrivateKey {
+func testKey(tb testing.TB) *openpgp.Entity {
 	tb.Helper()
 	f, err := os.Open("testdata/key.asc")
 	require.NoError(tb, err)
 	defer f.Close()
-	k, err := dynamic.EntityFromReader(f)
+	ent, err := dynamic.EntityFromReader(f)
 	require.NoError(tb, err)
-	return k
+	return ent
 }
