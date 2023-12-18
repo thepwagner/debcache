@@ -16,4 +16,4 @@ jobs:
     with:
       docker: true
     secrets:
-      token: ${{secrets.WAPWAGNER_TOKEN}}
+      ghcr-token: ${{secrets.WAPWAGNER_TOKEN}}
