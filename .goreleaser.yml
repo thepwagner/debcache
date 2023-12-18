@@ -25,4 +25,3 @@ dockers:
     dockerfile: Containerfile.goreleaser
     image_templates:
       - "ghcr.io/thepwagner-org/debcache:latest"
-      - "ghcr.io/thepwagner-org/debcache:{{ .Tag }}"
