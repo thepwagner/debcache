@@ -1,6 +1,6 @@
-# syntax = docker/dockerfile:1.4.0
+# syntax = docker/dockerfile:1.4.0@sha256:178c4e4a93795b9365dbf6cf10da8fcf517fcb4a17f1943a775c0f548e9fc2ff
 
-FROM debian:bookworm-slim
+FROM debian:bookworm-slim@sha256:2bc5c236e9b262645a323e9088dfa3bb1ecb16cc75811daf40a23a824d665be9
 
 # TODO: key goes here
 
