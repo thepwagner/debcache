@@ -11,3 +11,5 @@ fi
 
 ssh apt.pwagner.net 'mkdir -p dist/debcache && rm -f dist/debcache/*.deb' || true
 scp dist/*.deb apt.pwagner.net:dist/debcache/
+
+docker push ghcr.io/thepwagner-org/debcache:latest
