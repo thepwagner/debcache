@@ -10,6 +10,7 @@ import (
 func TestFileStorage(t *testing.T) {
 	t.Parallel()
 
-	lru := cache.NewFileStorage(t.TempDir(), time.Minute)
-	testCache(t, lru)
+	testCache(t, func() cache.Storage {
+		return cache.NewFileStorage(t.TempDir(), time.Minute)
+	})
 }
