@@ -11,8 +11,7 @@ jobs:
   build:
     uses: thepwagner-org/actions/.github/workflows/golang-release.yaml@golang-release
     permissions:
-      contents: read
-      packages: write # TODO: why do i need this?
+      contents: write
     with:
       docker: true
     secrets:
