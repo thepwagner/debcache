@@ -6,11 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/blakesmith/ar"
 	"github.com/ulikunitz/xz"
 )
 
+// ParagraphFromDeb reads the control paragraph from a .deb.
 func ParagraphFromDeb(in io.Reader) (*Paragraph, error) {
 	for reader := ar.NewReader(in); ; {
 		// find control.tar.gz or die trying
@@ -61,4 +63,15 @@ func ParagraphFromDeb(in io.Reader) (*Paragraph, error) {
 		}
 	}
 	return nil, nil
+}
+
+// ParagraphFromDebFile reads the control paragraph from a .deb file.
+func ParagraphFromDebFile(fn string) (*Paragraph, error) {
+	f, err := os.Open(fn)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	return ParagraphFromDeb(f)
 }

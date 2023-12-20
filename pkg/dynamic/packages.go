@@ -14,9 +14,3 @@ func (pl PackageList) Add(component repo.Component, architecture repo.Architectu
 	}
 	pl[component][architecture] = append(pl[component][architecture], p)
 }
-
-type RenderedPackages struct {
-	inRelease []byte
-	packages  map[repo.Component]map[repo.Architecture][]byte
-	byHash    map[string][]byte
-}

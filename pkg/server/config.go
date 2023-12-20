@@ -66,7 +66,7 @@ func BuildRepo(name string, cfg RepoConfig) (repo.Repo, error) {
 	var err error
 	if cfg.Upstream.URL != "" {
 		base, err = repo.UpstreamFromConfig(cfg.Upstream)
-	} else if cfg.Dynamic.SigningKey != "" || cfg.Dynamic.SigningKeyPath != "" {
+	} else if cfg.Dynamic.SigningConfig.SigningKey != "" || cfg.Dynamic.SigningConfig.SigningKeyPath != "" {
 		base, err = dynamic.RepoFromConfig(cfg.Dynamic)
 	}
 	if err != nil {

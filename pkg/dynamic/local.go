@@ -13,16 +13,26 @@ import (
 	"time"
 
 	"github.com/thepwagner/debcache/pkg/debian"
+	"github.com/thepwagner/debcache/pkg/repo"
 )
 
-type FileSource struct {
+// LocalSource is a package source that reads from a local directory.
+type LocalSource struct {
 	dir string
 }
 
-var _ PackageSource = (*FileSource)(nil)
+var _ PackageSource = (*LocalSource)(nil)
 
-func (s FileSource) Packages(_ context.Context) (PackageList, time.Time, error) {
-	var ret []debian.Paragraph
+type LocalConfig struct {
+	Directory string `yaml:"dir"`
+}
+
+func NewLocalSource(cfg LocalConfig) *LocalSource {
+	return &LocalSource{dir: cfg.Directory}
+}
+
+func (s LocalSource) Packages(_ context.Context) (PackageList, time.Time, error) {
+	ret := PackageList{}
 	var latest time.Time
 	err := filepath.Walk(s.dir, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
@@ -36,7 +46,7 @@ func (s FileSource) Packages(_ context.Context) (PackageList, time.Time, error) 
 			latest = mt
 		}
 
-		pkg, err := ParagraphFromDebFile(path)
+		pkg, err := debian.ParagraphFromDebFile(path)
 		if err != nil {
 			return err
 		} else if pkg == nil {
@@ -47,35 +57,23 @@ func (s FileSource) Packages(_ context.Context) (PackageList, time.Time, error) 
 		if err := s.addFileData(*pkg, path, info); err != nil {
 			return err
 		}
-		ret = append(ret, *pkg)
+
+		arch := repo.Architecture((*pkg)["Architecture"])
+		ret.Add("main", arch, *pkg)
 		return nil
 	})
 	if err != nil {
 		return nil, time.Time{}, err
 	}
 
-	return PackageList{
-		"main": {
-			"amd64": ret,
-		},
-	}, latest, nil
+	return ret, latest, nil
 }
 
-func (s FileSource) Deb(_ context.Context, filename string) ([]byte, error) {
+func (s LocalSource) Deb(_ context.Context, filename string) ([]byte, error) {
 	return os.ReadFile(filepath.Join(s.dir, filename))
 }
 
-func ParagraphFromDebFile(fn string) (*debian.Paragraph, error) {
-	f, err := os.Open(fn)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	return debian.ParagraphFromDeb(f)
-}
-
-func (s FileSource) addFileData(pkg debian.Paragraph, fn string, info fs.FileInfo) error {
+func (s LocalSource) addFileData(pkg debian.Paragraph, fn string, info fs.FileInfo) error {
 	f, err := os.Open(fn)
 	if err != nil {
 		return err

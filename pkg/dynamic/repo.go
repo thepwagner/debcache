@@ -5,9 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
-	"io"
 	"log/slog"
-	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -28,9 +26,9 @@ type PackageSource interface {
 
 // Repo is dynamically generated from a PackageSource.
 type Repo struct {
-	entity *openpgp.Entity
-
-	src PackageSource
+	signer *openpgp.Entity
+	src    PackageSource
+	maxAge time.Duration
 
 	mu         sync.RWMutex
 	renderTime time.Time
@@ -38,39 +36,28 @@ type Repo struct {
 }
 
 type RepoConfig struct {
-	SigningKey     string `yaml:"signingKey"`
-	SigningKeyPath string `yaml:"signingKeyPath"`
+	SigningConfig SigningConfig `yaml:",inline"`
+	Files         LocalConfig   `yaml:"files"`
+}
 
-	Files struct {
-		Directory string `yaml:"dir"`
-	} `yaml:"files"`
+type RenderedPackages struct {
+	inRelease []byte
+	packages  map[repo.Component]map[repo.Architecture][]byte
+	byHash    map[string][]byte
 }
 
 var _ repo.Repo = (*Repo)(nil)
 
-func NewRepo(entity *openpgp.Entity, src PackageSource) *Repo {
+func NewRepo(signer *openpgp.Entity, src PackageSource) *Repo {
 	return &Repo{
-		entity: entity,
+		signer: signer,
 		src:    src,
+		maxAge: 5 * time.Minute,
 	}
 }
 
 func RepoFromConfig(cfg RepoConfig) (*Repo, error) {
-	var entity *openpgp.Entity
-	var err error
-	if cfg.SigningKey != "" {
-		slog.Debug("reading key from config")
-		entity, err = EntityFromReader(strings.NewReader(cfg.SigningKey))
-	} else if cfg.SigningKeyPath != "" {
-		slog.Debug("reading key from file", slog.String("path", cfg.SigningKeyPath))
-		var f io.ReadCloser
-		f, err = os.Open(cfg.SigningKeyPath)
-		if err != nil {
-			return nil, err
-		}
-		defer f.Close()
-		entity, err = EntityFromReader(f)
-	}
+	entity, err := EntityFromConfig(cfg.SigningConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +65,7 @@ func RepoFromConfig(cfg RepoConfig) (*Repo, error) {
 
 	var src PackageSource
 	if cfg.Files.Directory != "" {
-		src = &FileSource{
+		src = &LocalSource{
 			dir: cfg.Files.Directory,
 		}
 	}
@@ -87,14 +74,6 @@ func RepoFromConfig(cfg RepoConfig) (*Repo, error) {
 	}
 
 	return NewRepo(entity, src), nil
-}
-
-func EntityFromReader(in io.Reader) (*openpgp.Entity, error) {
-	keyRing, err := openpgp.ReadArmoredKeyRing(in)
-	if err != nil {
-		return nil, fmt.Errorf("decoding key: %w", err)
-	}
-	return keyRing[0], nil
 }
 
 func (r *Repo) InRelease(ctx context.Context, dist repo.Distribution) ([]byte, error) {
@@ -135,7 +114,7 @@ func (r *Repo) SigningKeyPEM() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := r.entity.Serialize(w); err != nil {
+	if err := r.signer.Serialize(w); err != nil {
 		return nil, err
 	}
 	if err := w.Close(); err != nil {
@@ -145,13 +124,11 @@ func (r *Repo) SigningKeyPEM() ([]byte, error) {
 }
 
 func (r *Repo) render(ctx context.Context, dist repo.Distribution) error {
-	const maxAge = 5 * time.Minute
-
 	// Fast read lock path:
 	r.mu.RLock()
 	age := time.Since(r.renderTime)
 	r.mu.RUnlock()
-	if age < maxAge {
+	if age < r.maxAge {
 		slog.Debug("skipping render", slog.Duration("age", age))
 		return nil
 	}
@@ -159,7 +136,7 @@ func (r *Repo) render(ctx context.Context, dist repo.Distribution) error {
 	// Slow write lock, avoid concurrent renders:
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if age := time.Since(r.renderTime); age < maxAge {
+	if age := time.Since(r.renderTime); age < r.maxAge {
 		slog.Debug("skipping render", slog.Duration("age", age))
 		return nil
 	}
@@ -168,15 +145,16 @@ func (r *Repo) render(ctx context.Context, dist repo.Distribution) error {
 	if err != nil {
 		return err
 	}
+	// If packages have not changed since the last render, we can skip:
 	if pkgTime.Before(r.renderTime) {
 		slog.Debug("skipping render", slog.Time("pkgTime", pkgTime), slog.Time("renderTime", r.renderTime))
+		r.renderTime = time.Now()
 		return nil
 	}
 
 	slog.Debug("rendering packages", slog.Int("count", len(pkgs)))
-
-	r.renderTime = pkgTime
-	rendered, err := r.renderPackages(pkgs, dist)
+	r.renderTime = time.Now()
+	rendered, err := r.renderPackages(pkgs, pkgTime, dist)
 	if err != nil {
 		return err
 	}
@@ -196,7 +174,7 @@ var compressors = []repo.Compression{
 	repo.CompressionXZ,
 }
 
-func (r *Repo) renderPackages(pkgs PackageList, dist repo.Distribution) (*RenderedPackages, error) {
+func (r *Repo) renderPackages(pkgs PackageList, pkgTime time.Time, dist repo.Distribution) (*RenderedPackages, error) {
 	// We have three things to index:
 	var components []string
 	var architectures []string
@@ -252,7 +230,7 @@ func (r *Repo) renderPackages(pkgs PackageList, dist repo.Distribution) (*Render
 		"Label":           "Debian",
 		"Architectures":   strings.Join(architectures, " "),
 		"Components":      strings.Join(components, " "),
-		"Date":            time.Now().UTC().Format(time.RFC1123Z),
+		"Date":            pkgTime.UTC().Format(time.RFC1123Z),
 		"Acquire-By-Hash": "yes",
 		"Description":     "Debian",
 		"Codename":        dist.String(),
@@ -265,7 +243,7 @@ func (r *Repo) renderPackages(pkgs PackageList, dist repo.Distribution) (*Render
 
 	// Sign the release:
 	var inRelease bytes.Buffer
-	enc, err := clearsign.Encode(&inRelease, r.entity.PrivateKey, nil)
+	enc, err := clearsign.Encode(&inRelease, r.signer.PrivateKey, nil)
 	if err != nil {
 		return nil, err
 	}

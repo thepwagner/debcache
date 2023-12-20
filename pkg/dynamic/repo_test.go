@@ -4,11 +4,9 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
-	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/thepwagner/debcache/pkg/dynamic"
@@ -67,6 +65,14 @@ func TestRepo(t *testing.T) {
 		assert.Contains(t, inRelease, "cc2e941ff9f66e98d23268a249eda3384e6d514a903746e77c8f260f4ca71fa6  49 main/binary-arm64/Packages")
 	})
 
+	t.Run("caching rendered packages list", func(t *testing.T) {
+		t.Parallel()
+		_, err := r.InRelease(ctx, dist)
+		require.NoError(t, err)
+		_, err = r.InRelease(ctx, dist)
+		require.NoError(t, err)
+	})
+
 	t.Run("Packages", func(t *testing.T) {
 		t.Parallel()
 
@@ -101,14 +107,4 @@ func (t TestSource) Packages(_ context.Context) (dynamic.PackageList, time.Time,
 
 func (t TestSource) Deb(_ context.Context, _ string) ([]byte, error) {
 	return nil, nil
-}
-
-func testKey(tb testing.TB) *openpgp.Entity {
-	tb.Helper()
-	f, err := os.Open("testdata/key.asc")
-	require.NoError(tb, err)
-	defer f.Close()
-	ent, err := dynamic.EntityFromReader(f)
-	require.NoError(tb, err)
-	return ent
 }
