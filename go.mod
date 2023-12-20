@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/ProtonMail/go-crypto v0.0.0-20230923063757-afb1ddc0824c
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
-	github.com/go-chi/chi/v5 v5.0.10
+	github.com/go-chi/chi/v5 v5.0.11
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/lmittmann/tint v1.0.3
 	github.com/stretchr/testify v1.8.4
