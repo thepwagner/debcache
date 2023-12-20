@@ -6,6 +6,7 @@ require (
 	github.com/ProtonMail/go-crypto v0.0.0-20230923063757-afb1ddc0824c
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/go-chi/chi/v5 v5.0.10
+	github.com/google/go-github/v57 v57.0.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/lmittmann/tint v1.0.3
 	github.com/stretchr/testify v1.8.4
@@ -17,6 +18,7 @@ require (
 require (
 	github.com/cloudflare/circl v1.3.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/crypto v0.16.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect

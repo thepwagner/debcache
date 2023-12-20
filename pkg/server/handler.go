@@ -63,18 +63,17 @@ func (h Handler) RepoSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key, err := repo.SigningKeyPEM()
+	signedBy, err := repo.SigningKeyPEM()
 	if err != nil {
 		slog.Error("repo.SigningKeyPEM", slog.String("error", err.Error()))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if len(key) == 0 {
-		http.NotFound(w, r)
-		return
+	if len(signedBy) == 0 {
+		signedBy = []byte("/usr/share/keyrings/debian-archive-keyring.gpg")
 	}
 
-	r.URL.Scheme = "https"
+	r.URL.Scheme = "http"
 	r.URL.Host = r.Host
 	r.URL.Path = ""
 
@@ -83,7 +82,7 @@ func (h Handler) RepoSource(w http.ResponseWriter, r *http.Request) {
 		"URIs":       r.URL.JoinPath(repoName).String(),
 		"Suites":     "bookworm",
 		"Components": "main",
-		"Signed-By":  string(key),
+		"Signed-By":  string(signedBy),
 	}
 
 	_ = debian.WriteControlFile(w, repoGraph)

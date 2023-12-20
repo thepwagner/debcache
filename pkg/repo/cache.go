@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net/url"
-	"path/filepath"
 	"time"
 
 	"github.com/go-chi/chi/v5/middleware"
@@ -18,10 +16,6 @@ type Cache struct {
 	storage cache.Storage
 }
 
-type CacheConfig struct {
-	URL string `yaml:"url"`
-}
-
 var _ Repo = (*Cache)(nil)
 
 const (
@@ -31,20 +25,10 @@ const (
 	pool     = cache.Namespace("pool")
 )
 
-func CacheFromConfig(src Repo, cfg CacheConfig) (*Cache, error) {
-	u, err := url.Parse(cfg.URL)
+func CacheFromConfig(src Repo, cfg cache.Config) (*Cache, error) {
+	store, err := cache.StorageFromConfig(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing cache URL: %w", err)
-	}
-
-	var store cache.Storage
-	switch u.Scheme {
-	case "file":
-		p := filepath.Join(u.Hostname(), u.Path)
-		store = cache.NewFileStorage(p, time.Hour)
-		slog.Debug("decorating in file cache", slog.String("path", p))
-	default:
-		return nil, fmt.Errorf("unsupported cache scheme %q", u.Scheme)
+		return nil, fmt.Errorf("preparing cache storage: %w", err)
 	}
 
 	// TODO: this assumes reads are clustered
