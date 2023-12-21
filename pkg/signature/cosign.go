@@ -85,11 +85,7 @@ func (v RekorVerifier) findEntry(ctx context.Context, digest string) ([]string, 
 		return nil, fmt.Errorf("searching index: %w", err)
 	}
 
-	ret := make([]string, 0, len(res.Payload))
-	for _, entry := range res.Payload {
-		ret = append(ret, entry)
-	}
-	return ret, nil
+	return res.Payload, nil
 }
 
 func (v RekorVerifier) verifyEntry(ctx context.Context, entryUUID string) (*certificate.Extensions, error) {
