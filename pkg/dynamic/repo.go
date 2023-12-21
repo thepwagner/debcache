@@ -36,8 +36,9 @@ type Repo struct {
 }
 
 type RepoConfig struct {
-	SigningConfig SigningConfig `yaml:",inline"`
-	Files         LocalConfig   `yaml:"files"`
+	SigningConfig  SigningConfig        `yaml:",inline"`
+	Files          LocalConfig          `yaml:"files"`
+	GitHubReleases GitHubReleasesConfig `yaml:"github-releases"`
 }
 
 type RenderedPackages struct {
@@ -65,10 +66,14 @@ func RepoFromConfig(cfg RepoConfig) (*Repo, error) {
 
 	var src PackageSource
 	if cfg.Files.Directory != "" {
-		src = &LocalSource{
-			dir: cfg.Files.Directory,
-		}
+		src = NewLocalSource(cfg.Files)
+	} else if len(cfg.GitHubReleases.Repositories) > 0 {
+		src, err = NewGitHubReleasesSource(cfg.GitHubReleases)
 	}
+	if err != nil {
+		return nil, err
+	}
+
 	if src == nil {
 		return nil, fmt.Errorf("no source configured")
 	}

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/thepwagner/debcache/pkg/cache"
 	"github.com/thepwagner/debcache/pkg/dynamic"
 	"github.com/thepwagner/debcache/pkg/repo"
 	"gopkg.in/yaml.v3"
@@ -19,7 +20,7 @@ type Config struct {
 type RepoConfig struct {
 	Upstream repo.UpstreamConfig `yaml:"upstream"`
 	Dynamic  dynamic.RepoConfig  `yaml:"dynamic"`
-	Cache    repo.CacheConfig    `yaml:"cache"`
+	Cache    cache.Config        `yaml:"cache"`
 }
 
 func loadConfig() (*Config, error) {
