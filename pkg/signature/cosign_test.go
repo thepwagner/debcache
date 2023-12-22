@@ -13,23 +13,27 @@ import (
 
 func TestCosignVerifier(t *testing.T) {
 	t.Parallel()
-	t.Skip("WIP")
+	t.Skip("uses network")
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
 	})))
 
 	ctx := context.Background()
-	v, err := signature.NewCosignVerifier(ctx)
+	v, err := signature.NewRekorVerifier(ctx, signature.FulcioIdentity{
+		GitHubWorkflowRef:        "refs/tags/{{VERSION}}",
+		GitHubWorkflowTrigger:    "push",
+		SourceRepositoryOwnerURI: "https://github.com/getsops",
+		BuildConfigURI:           "https://github.com/getsops/sops/.github/workflows/release.yml@refs/tags/{{VERSION}}",
+		BuildTriggerPattern:      `(push|pull_request)`,
+	})
 	require.NoError(t, err)
 
 	deb, err := os.ReadFile("../../tmp/github/github-release-assets:::getsops_sops_sops_3.8.1_amd64.deb")
 	require.NoError(t, err)
 
-	ok, err := v.Verify(ctx, deb)
+	ok, err := v.Verify(ctx, "v3.8.1", deb)
 	require.NoError(t, err)
 	assert.True(t, ok)
-
-	t.Fail()
 }
 
 // test cases:

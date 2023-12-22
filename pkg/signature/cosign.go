@@ -5,14 +5,16 @@ import (
 	"context"
 	"crypto/sha256"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
 	"log/slog"
+	"regexp"
+	"strings"
 
 	"github.com/go-openapi/runtime"
 	"github.com/sigstore/cosign/v2/pkg/cosign"
-	"github.com/sigstore/fulcio/pkg/certificate"
 	rekor "github.com/sigstore/rekor/pkg/client"
 	"github.com/sigstore/rekor/pkg/generated/client"
 	"github.com/sigstore/rekor/pkg/generated/client/entries"
@@ -20,38 +22,43 @@ import (
 	"github.com/sigstore/rekor/pkg/generated/models"
 )
 
-type CosignConfig struct {
-	CertificateOIDCIssuer     string `yaml:"certificate-oidc-issuer"`
-	CertificateIdentityRegExp string `yaml:"certificate-identity-regexp"`
-}
-
 // RekorVerifier verifies a deb using the Rekor transparency log.
 type RekorVerifier struct {
 	client *client.Rekor
 	pubs   *cosign.TrustedTransparencyLogPubKeys
+
+	values  map[string]string
+	regexps map[string]*regexp.Regexp
 }
 
-func NewCosignVerifier(ctx context.Context) (*RekorVerifier, error) {
+var _ Verifier = (*RekorVerifier)(nil)
+
+func NewRekorVerifier(ctx context.Context, identity FulcioIdentity) (*RekorVerifier, error) {
 	client, err := rekor.GetRekorClient("https://rekor.sigstore.dev/")
 	if err != nil {
 		return nil, err
 	}
-
 	pubs, err := cosign.GetRekorPubs(ctx)
 	if err != nil {
 		return nil, err
 	}
 
+	regexps, err := identity.regexps()
+	if err != nil {
+		return nil, err
+	}
+
 	return &RekorVerifier{
-		client: client,
-		pubs:   pubs,
+		client:  client,
+		pubs:    pubs,
+		values:  identity.values(),
+		regexps: regexps,
 	}, nil
 }
 
-func (v *RekorVerifier) Verify(ctx context.Context, deb []byte) (bool, error) {
+func (v *RekorVerifier) Verify(ctx context.Context, version string, deb []byte) (bool, error) {
 	digest := fmt.Sprintf("sha256:%x", sha256.Sum256(deb))
 	log := slog.With(slog.String("digest", digest))
-
 	entries, err := v.findEntry(ctx, digest)
 	if err != nil {
 		return false, fmt.Errorf("searching index: %w", err)
@@ -62,13 +69,13 @@ func (v *RekorVerifier) Verify(ctx context.Context, deb []byte) (bool, error) {
 	log.Debug("entry found", slog.Any("entries", entries))
 
 	for _, entry := range entries {
-		ce, err := v.verifyEntry(ctx, entry)
+		ok, err := v.verifyEntry(ctx, version, entry)
 		if err != nil {
 			return false, fmt.Errorf("verifying entry: %w", err)
-		} else if ce == nil {
-			continue
+		} else if ok {
+			log.Debug("entry verified")
+			return true, nil
 		}
-		log.Debug("entry verified", slog.String("workflow", ce.Issuer))
 	}
 
 	return false, fmt.Errorf("not implemented")
@@ -88,25 +95,25 @@ func (v RekorVerifier) findEntry(ctx context.Context, digest string) ([]string, 
 	return res.Payload, nil
 }
 
-func (v RekorVerifier) verifyEntry(ctx context.Context, entryUUID string) (*certificate.Extensions, error) {
+func (v RekorVerifier) verifyEntry(ctx context.Context, version string, entryUUID string) (bool, error) {
 	entryRes, err := v.client.Entries.GetLogEntryByUUID(&entries.GetLogEntryByUUIDParams{
 		Context:   ctx,
 		EntryUUID: entryUUID,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("fetching index: %w", err)
+		return false, fmt.Errorf("fetching index: %w", err)
 	}
 	for _, payload := range entryRes.GetPayload() {
 		if err := cosign.VerifyTLogEntryOffline(ctx, &payload, v.pubs); err != nil {
-			return nil, fmt.Errorf("verifying entry: %w", err)
+			return false, fmt.Errorf("verifying entry: %w", err)
 		}
 		dec, err := base64.StdEncoding.DecodeString(payload.Body.(string))
 		if err != nil {
-			return nil, fmt.Errorf("decoding entry: %w", err)
+			return false, fmt.Errorf("decoding entry: %w", err)
 		}
 		pe, err := models.UnmarshalProposedEntry(bytes.NewReader(dec), runtime.JSONConsumer())
 		if err != nil {
-			return nil, fmt.Errorf("unmarshaling proposed entry: %w", err)
+			return false, fmt.Errorf("unmarshaling proposed entry: %w", err)
 		}
 
 		switch entry := pe.(type) {
@@ -114,31 +121,64 @@ func (v RekorVerifier) verifyEntry(ctx context.Context, entryUUID string) (*cert
 			d := entry.Spec.(map[string]interface{})
 			pubKeyRaw, err := base64.StdEncoding.DecodeString(d["publicKey"].(string))
 			if err != nil {
-				return nil, fmt.Errorf("decoding public key: %w", err)
+				return false, fmt.Errorf("decoding public key: %w", err)
 			}
 			block, rest := pem.Decode(pubKeyRaw)
 			if len(rest) > 0 {
-				return nil, fmt.Errorf("extra data after PEM block")
+				return false, fmt.Errorf("extra data after PEM block")
 			}
 			cert, err := x509.ParseCertificate(block.Bytes)
 			if err != nil {
-				return nil, fmt.Errorf("parsing public key: %w", err)
-			}
-			ext := certificate.Extensions{}
-			for _, e := range cert.Extensions {
-				switch {
-				case e.Id.Equal(certificate.OIDIssuerV2):
-					if err := certificate.ParseDERString(e.Value, &ext.Issuer); err != nil {
-						return nil, fmt.Errorf("parsing issuer: %w", err)
-					}
-					// TODO: rest of https://github.com/znewman01/fulcio/blob/main/pkg/certificate/extensions.go
-				}
+				return false, fmt.Errorf("parsing public key: %w", err)
 			}
 
-			return &ext, nil
+			if ok, err := v.verifyExtensions(version, cert.Extensions); err != nil {
+				return false, fmt.Errorf("parsing extensions: %w", err)
+			} else if ok {
+				return true, nil
+			}
+
 		default:
-			return nil, fmt.Errorf("unsupported entry type: %T", pe)
+			return false, fmt.Errorf("unsupported entry type: %T", pe)
 		}
 	}
-	return nil, nil
+	return false, nil
+}
+
+func (v RekorVerifier) verifyExtensions(version string, ext []pkix.Extension) (bool, error) {
+	vCount := len(v.values)
+	reCount := len(v.regexps)
+	slog.Debug("verifying extensions", slog.Int("needed_values", vCount), slog.Int("needed_regexps", reCount), slog.Int("extension_count", len(ext)))
+	for _, e := range ext {
+		actual, err := decodeExtension(e)
+		if err != nil {
+			return false, err
+		} else if actual == "" {
+			continue
+		}
+		extID := e.Id.String()
+		log := slog.With(slog.String("id", extID), slog.String("actual", actual))
+		if expected, ok := v.values[extID]; ok {
+			if actual != strings.ReplaceAll(expected, "{{VERSION}}", version) {
+				log.Debug("extension value mismatch", slog.String("expected", expected))
+				return false, nil
+			}
+			log.Debug("extension value match", slog.String("expected", expected))
+			vCount--
+		}
+
+		if re, ok := v.regexps[extID]; ok {
+			if !re.MatchString(actual) {
+				log.Debug("extension regexp mismatch", slog.String("expected", re.String()))
+				return false, nil
+			}
+			log.Debug("extension regexp match", slog.String("expected", re.String()))
+			reCount--
+		}
+
+		if vCount == 0 && reCount == 0 {
+			return true, nil
+		}
+	}
+	return false, nil
 }
