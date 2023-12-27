@@ -13,9 +13,13 @@ type Component string
 // Architecture is a Debian architecture (e.g. "amd64", "arm64").
 type Architecture string
 
+// Language is a Debian translation (e.g. "en").
+type Language string
+
 func (d Distribution) String() string { return string(d) }
 func (c Component) String() string    { return string(c) }
 func (a Architecture) String() string { return string(a) }
+func (l Language) String() string     { return string(l) }
 
 // Repo is a source for Debian packages.
 type Repo interface {
@@ -23,6 +27,7 @@ type Repo interface {
 	InRelease(ctx context.Context, dist Distribution) ([]byte, error)
 
 	Packages(ctx context.Context, dist Distribution, component Component, arch Architecture, compression Compression) ([]byte, error)
+	Translations(ctx context.Context, dist Distribution, component Component, lang Language, compression Compression) ([]byte, error)
 
 	// ByHash fetches metadata (e.g. an architecture's package list) by its hash.
 	ByHash(ctx context.Context, dist Distribution, component Component, arch Architecture, digest string) ([]byte, error)

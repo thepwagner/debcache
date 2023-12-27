@@ -48,6 +48,10 @@ func (u Upstream) Packages(ctx context.Context, dist Distribution, component Com
 	return u.get(ctx, "dists", dist.String(), component.String(), fmt.Sprintf("binary-%s", arch), "Packages"+compression.Extension())
 }
 
+func (u Upstream) Translations(ctx context.Context, dist Distribution, component Component, lang Language, compression Compression) ([]byte, error) {
+	return u.get(ctx, "dists", dist.String(), component.String(), "i18n", fmt.Sprintf("Translation-%s%s", lang, compression.Extension()))
+}
+
 func (u Upstream) ByHash(ctx context.Context, dist Distribution, component Component, arch Architecture, digest string) ([]byte, error) {
 	return u.get(ctx, "dists", dist.String(), component.String(), fmt.Sprintf("binary-%s", arch), "by-hash", "SHA256", digest)
 }

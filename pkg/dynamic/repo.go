@@ -102,6 +102,10 @@ func (r *Repo) Packages(ctx context.Context, dist repo.Distribution, component r
 	return compression.Compress(pkgRaw)
 }
 
+func (r *Repo) Translations(_ context.Context, _ repo.Distribution, _ repo.Component, _ repo.Language, _ repo.Compression) ([]byte, error) {
+	return nil, fmt.Errorf("translations not supported")
+}
+
 func (r *Repo) ByHash(ctx context.Context, dist repo.Distribution, _ repo.Component, _ repo.Architecture, digest string) ([]byte, error) {
 	if err := r.render(ctx, dist); err != nil {
 		return nil, err
@@ -189,6 +193,8 @@ func (r *Repo) renderPackages(pkgs PackageList, pkgTime time.Time, dist repo.Dis
 		packages: map[repo.Component]map[repo.Architecture][]byte{},
 		byHash:   map[string][]byte{},
 	}
+
+	// If translations WERE supported, they need to be in this index.
 
 	archIndex := map[repo.Architecture]struct{}{}
 	for name, component := range pkgs {

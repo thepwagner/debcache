@@ -233,7 +233,7 @@ func (h Handler) Translations(w http.ResponseWriter, r *http.Request) {
 	repoName := chi.URLParam(r, "repo")
 	dist := repo.Distribution(chi.URLParam(r, "dist"))
 	component := repo.Component(chi.URLParam(r, "component"))
-	lang := chi.URLParam(r, "lang")
+	lang := repo.Language(chi.URLParam(r, "lang"))
 	compression := repo.ParseCompression(chi.URLParam(r, "compression"))
 	slog.Info("handling Translations",
 		slog.String("request_id", middleware.GetReqID(r.Context())),
@@ -250,18 +250,16 @@ func (h Handler) Translations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = repo
-	// res, err := repo.Translations(r.Context(), dist, component, lang, compression)
-	// if err != nil {
-	// 	slog.Error("repo.Translations", slog.String("error", err.Error()))
-	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-	// 	return
-	// }
-	// if len(res) == 0 {
-	// 	http.NotFound(w, r)
-	// 	return
-	// }
+	res, err := repo.Translations(r.Context(), dist, component, lang, compression)
+	if err != nil {
+		slog.Error("repo.Translations", slog.String("error", err.Error()))
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(res) == 0 {
+		http.NotFound(w, r)
+		return
+	}
 
-	// _, _ = w.Write(res)
-
+	_, _ = w.Write(res)
 }
