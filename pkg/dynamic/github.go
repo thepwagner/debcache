@@ -25,7 +25,6 @@ import (
 )
 
 type GitHubReleasesSource struct {
-	http   *http.Client
 	github *github.Client
 
 	cache         cache.Storage
@@ -36,6 +35,7 @@ type GitHubReleasesSource struct {
 var _ PackageSource = (*GitHubReleasesSource)(nil)
 
 type GitHubReleasesConfig struct {
+	Token string `yaml:"token"`
 	// Repositories is a map of GitHub repository `owner/name`s to configuration.
 	Repositories  map[string]GitHubReleasesRepoConfig `yaml:"repositories"`
 	Architectures []repo.Architecture                 `yaml:"architectures"`
@@ -54,7 +54,10 @@ type releaseRepo struct {
 }
 
 func NewGitHubReleasesSource(ctx context.Context, config GitHubReleasesConfig) (*GitHubReleasesSource, error) {
-	client := github.NewClient(http.DefaultClient)
+	client := github.NewClient(&http.Client{})
+	if config.Token != "" {
+		client = client.WithAuthToken(config.Token)
+	}
 
 	arches := make(map[repo.Architecture]struct{}, len(config.Architectures))
 	for _, arch := range config.Architectures {
@@ -91,7 +94,6 @@ func NewGitHubReleasesSource(ctx context.Context, config GitHubReleasesConfig) (
 	}
 
 	return &GitHubReleasesSource{
-		http:          http.DefaultClient,
 		github:        client,
 		repos:         repos,
 		cache:         storage,
@@ -119,7 +121,7 @@ func (gh *GitHubReleasesSource) Packages(ctx context.Context) (PackageList, time
 			slog.Debug("inspecting release", slog.String("tag", release.GetTagName()), slog.Int("asset_count", len(release.Assets)))
 
 			// If we're processing checksums, grab that file first:
-			checksums, digester, err := gh.getCheckSums(ctx, ghRepo, *releaseRepo, release)
+			checksums, digester, err := gh.getCheckSums(ctx, repoName[0], repoName[1], *releaseRepo, release)
 			if err != nil {
 				return nil, time.Time{}, fmt.Errorf("getting checksums: %w", err)
 			}
@@ -141,10 +143,12 @@ func (gh *GitHubReleasesSource) Packages(ctx context.Context) (PackageList, time
 				log.Debug("release has deb asset")
 
 				// Download and verify the .deb file:
-				b, err := gh.get(ctx, ghRepo, fn, ass.GetBrowserDownloadURL())
+				b, err := gh.get(ctx, repoName[0], repoName[1], ass.GetID())
 				if err != nil {
 					return nil, time.Time{}, fmt.Errorf("getting asset: %w", err)
 				}
+				log.Debug("download completed", slog.Int("bytes", len(b)))
+
 				if len(checksums) == 0 {
 					// If we're not processing checksums, attempt to verify the .deb directly
 					if ok, err := verifier.Verify(ctx, release.GetTagName(), b); err != nil {
@@ -153,6 +157,7 @@ func (gh *GitHubReleasesSource) Packages(ctx context.Context) (PackageList, time
 						log.Warn("deb failed verification")
 						continue
 					}
+					log.Debug("file passed signature verification")
 				} else {
 					// Validate the checksum - don't worry about signature verification (the checksum file may have been signed, but we don't care here)
 					// It is OK that we might calculate sha256(b) twice.
@@ -213,25 +218,29 @@ func (gh *GitHubReleasesSource) Deb(ctx context.Context, filename string) ([]byt
 	return nil, nil
 }
 
-func (gh *GitHubReleasesSource) get(ctx context.Context, ghRepo, fn, url string) ([]byte, error) {
-	key := assets.Key(strings.ReplaceAll(ghRepo, "/", "_") + "_" + fn)
+func (gh *GitHubReleasesSource) get(ctx context.Context, owner, repo string, assetID int64) ([]byte, error) {
+	key := assets.Key(fmt.Sprintf("%s_%s_%d", owner, repo, assetID))
 	if b, ok := gh.cache.Get(ctx, key); ok {
 		return b, nil
 	}
-	res, err := gh.http.Get(url)
+
+	body, _, err := gh.github.Repositories.DownloadReleaseAsset(ctx, owner, repo, assetID, http.DefaultClient)
 	if err != nil {
-		return nil, fmt.Errorf("getting asset: %w", err)
+		return nil, fmt.Errorf("getting asset %d: %w", assetID, err)
 	}
-	defer res.Body.Close()
-	b, err := io.ReadAll(res.Body)
+	defer body.Close()
+
+	b, err := io.ReadAll(body)
 	if err != nil {
 		return nil, fmt.Errorf("reading asset: %w", err)
 	}
+	slog.Debug("fetched asset", slog.String("repo_owner", owner), slog.String("repo_name", repo), slog.Int64("asset_id", assetID), slog.Int("bytes", len(b)))
+
 	gh.cache.Add(ctx, key, b)
 	return b, nil
 }
 
-func (gh *GitHubReleasesSource) getCheckSums(ctx context.Context, ghRepo string, repoCfg releaseRepo, release *github.RepositoryRelease) (map[string]string, func() hash.Hash, error) {
+func (gh *GitHubReleasesSource) getCheckSums(ctx context.Context, owner, repo string, repoCfg releaseRepo, release *github.RepositoryRelease) (map[string]string, func() hash.Hash, error) {
 	if repoCfg.ChecksumFile == "" {
 		return nil, nil, nil
 	}
@@ -245,9 +254,10 @@ func (gh *GitHubReleasesSource) getCheckSums(ctx context.Context, ghRepo string,
 		if fn != checksumFile {
 			continue
 		}
+		slog.Debug("found checksum asset", slog.String("repo_owner", owner), slog.String("repo_name", repo), slog.Int("asset_id", int(ass.GetID())))
 
 		// Download and verify the signature of the checksum file:
-		b, err := gh.get(ctx, ghRepo, fn, ass.GetBrowserDownloadURL())
+		b, err := gh.get(ctx, owner, repo, ass.GetID())
 		if err != nil {
 			return nil, nil, fmt.Errorf("downloading checksum file: %w", err)
 		}

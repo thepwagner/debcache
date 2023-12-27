@@ -9,13 +9,16 @@ import (
 	"github.com/thepwagner/debcache/pkg/dynamic"
 )
 
+const debianTestDataDir = "../debian/testdata"
+
 func TestLocalSource_Packages(t *testing.T) {
 	t.Parallel()
+	ctx := context.Background()
 
 	t.Run("no packages found", func(t *testing.T) {
 		t.Parallel()
-		src := dynamic.NewLocalSource(dynamic.LocalConfig{Directory: "testdata"})
-		pkgs, ts, err := src.Packages(context.Background())
+		src := dynamic.NewLocalSource(dynamic.LocalConfig{Directory: t.TempDir()})
+		pkgs, ts, err := src.Packages(ctx)
 		require.NoError(t, err)
 		assert.Empty(t, pkgs)
 		assert.True(t, ts.IsZero())
@@ -23,8 +26,8 @@ func TestLocalSource_Packages(t *testing.T) {
 
 	t.Run("packages found", func(t *testing.T) {
 		t.Parallel()
-		src := dynamic.NewLocalSource(dynamic.LocalConfig{Directory: "../debian/testdata"})
-		pkgs, ts, err := src.Packages(context.Background())
+		src := dynamic.NewLocalSource(dynamic.LocalConfig{Directory: debianTestDataDir})
+		pkgs, ts, err := src.Packages(ctx)
 		require.NoError(t, err)
 		assert.Len(t, pkgs, 1)
 		assert.False(t, ts.IsZero())
@@ -39,9 +42,8 @@ func TestLocalSource_Packages(t *testing.T) {
 
 func TestLocalSource_Deb(t *testing.T) {
 	t.Parallel()
-
 	ctx := context.Background()
-	src := dynamic.NewLocalSource(dynamic.LocalConfig{Directory: "../debian/testdata"})
+	src := dynamic.NewLocalSource(dynamic.LocalConfig{Directory: debianTestDataDir})
 
 	t.Run("package not found", func(t *testing.T) {
 		t.Parallel()
