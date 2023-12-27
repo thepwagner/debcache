@@ -114,30 +114,39 @@ func (v RekorVerifier) verifyEntry(ctx context.Context, version string, entryUUI
 			return false, fmt.Errorf("unmarshaling proposed entry: %w", err)
 		}
 
+		var pubKeyString string
 		switch entry := pe.(type) {
 		case *models.Intoto:
 			d := entry.Spec.(map[string]interface{})
-			pubKeyRaw, err := base64.StdEncoding.DecodeString(d["publicKey"].(string))
-			if err != nil {
-				return false, fmt.Errorf("decoding public key: %w", err)
-			}
-			block, rest := pem.Decode(pubKeyRaw)
-			if len(rest) > 0 {
-				return false, fmt.Errorf("extra data after PEM block")
-			}
-			cert, err := x509.ParseCertificate(block.Bytes)
-			if err != nil {
-				return false, fmt.Errorf("parsing public key: %w", err)
-			}
+			pubKeyString = d["publicKey"].(string)
 
-			if ok, err := v.verifyExtensions(version, cert.Extensions); err != nil {
-				return false, fmt.Errorf("parsing extensions: %w", err)
-			} else if ok {
-				return true, nil
-			}
+		case *models.Hashedrekord:
+			d := entry.Spec.(map[string]interface{})
+			sig := d["signature"].(map[string]interface{})
+			pk := sig["publicKey"].(map[string]interface{})
+			pubKeyString = pk["content"].(string)
 
 		default:
 			return false, fmt.Errorf("unsupported entry type: %T", pe)
+		}
+
+		pubKeyRaw, err := base64.StdEncoding.DecodeString(pubKeyString)
+		if err != nil {
+			return false, fmt.Errorf("decoding public key: %w", err)
+		}
+		block, rest := pem.Decode(pubKeyRaw)
+		if len(rest) > 0 {
+			return false, fmt.Errorf("extra data after PEM block")
+		}
+		cert, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return false, fmt.Errorf("parsing public key: %w", err)
+		}
+
+		if ok, err := v.verifyExtensions(version, cert.Extensions); err != nil {
+			return false, fmt.Errorf("parsing extensions: %w", err)
+		} else if ok {
+			return true, nil
 		}
 	}
 	return false, nil

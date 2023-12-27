@@ -4,15 +4,19 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"fmt"
+	"log/slog"
 	"regexp"
 
 	"github.com/sigstore/fulcio/pkg/certificate"
+	"github.com/sigstore/sigstore/pkg/cryptoutils"
 )
 
 // FulcioIdentity identifies a Fulcio certificate.
 type FulcioIdentity struct {
-	Issuer string `yaml:"issuer"`
+	Issuer         string `yaml:"issuer"`
+	SubjectAltName string `yaml:"subject-alt-name"`
 
+	// Reference https://github.com/sigstore/fulcio/blob/df01ed80f075e585dbd617d175fb029c2b9f8165/docs/oid-info.md
 	GitHubWorkflowTrigger    string `yaml:"github-workflow-trigger"`
 	GitHubWorkflowSha        string `yaml:"github-workflow-sha"`
 	GitHubWorkflowName       string `yaml:"github-workflow-name"`
@@ -43,6 +47,9 @@ func (i FulcioIdentity) values() map[string]string {
 		ret[certificate.OIDIssuer.String()] = i.Issuer //nolint:staticcheck
 	} else {
 		ret[certificate.OIDIssuer.String()] = "https://token.actions.githubusercontent.com" //nolint:staticcheck
+	}
+	if i.SubjectAltName != "" {
+		ret[cryptoutils.SANOID.String()] = i.SubjectAltName
 	}
 
 	if i.GitHubWorkflowTrigger != "" {
@@ -174,7 +181,33 @@ func decodeExtension(e pkix.Extension) (ret string, err error) {
 		err = certificate.ParseDERString(e.Value, &ret)
 	case e.Id.Equal(certificate.OIDSourceRepositoryVisibilityAtSigning):
 		err = certificate.ParseDERString(e.Value, &ret)
+	case e.Id.Equal(cryptoutils.SANOID):
+		var seq asn1.RawValue
+		rest, err := asn1.Unmarshal(e.Value, &seq)
+		if err != nil {
+			return "", err
+		} else if len(rest) != 0 {
+			return "", fmt.Errorf("trailing data after X.509 extension")
+		}
+		if !seq.IsCompound || seq.Tag != asn1.TagSequence || seq.Class != asn1.ClassUniversal {
+			return "", asn1.StructuralError{Msg: "bad SAN sequence"}
+		}
+		rest = seq.Bytes
+		for len(rest) > 0 {
+			var v asn1.RawValue
+			rest, err = asn1.Unmarshal(rest, &v)
+			if err != nil {
+				return "", err
+			}
+
+			switch v.Tag {
+			case 1:
+				return string(v.Bytes), nil
+			}
+		}
+
 	default:
+		slog.Warn("unknown extension", slog.String("id", e.Id.String()))
 		return "", nil
 	}
 	if err != nil {

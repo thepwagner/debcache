@@ -17,10 +17,17 @@ repos:
     dynamic:
       signingKeyPath: "tmp/key.asc"
       github-releases:
-        repositories:
-          sigstore/cosign:
-          getsops/sops:
         cache:
           url: file://tmp/github
+        repositories:
+          sigstore/cosign:
+            rekor-signer:
+              issuer: "https://accounts.google.com"
+              subject-alt-name: "keyless@projectsigstore.iam.gserviceaccount.com"
+          getsops/sops:
+            rekor-signer:
+              github-workflow-ref: "refs/tags/{{VERSION}}"
+              github-workflow-trigger: "push"
+
       # files:
       #   dir: tmp/debs/

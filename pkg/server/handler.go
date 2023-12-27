@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -17,7 +18,7 @@ type Handler struct {
 	repos map[string]repo.Repo
 }
 
-func NewHandler(cfg *Config) (*Handler, error) {
+func NewHandler(ctx context.Context, cfg *Config) (*Handler, error) {
 	h := &Handler{
 		mux:   chi.NewRouter(),
 		repos: map[string]repo.Repo{},
@@ -40,7 +41,7 @@ func NewHandler(cfg *Config) (*Handler, error) {
 	h.mux.Get("/{repo}/pool/{component}/{p}/{package}/*", h.Pool)
 
 	for name, cfg := range cfg.Repos {
-		repo, err := BuildRepo(name, cfg)
+		repo, err := BuildRepo(ctx, name, cfg)
 		if err != nil {
 			return nil, fmt.Errorf("error building repo %q: %w", name, err)
 		}

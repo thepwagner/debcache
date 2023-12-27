@@ -57,7 +57,7 @@ func NewRepo(signer *openpgp.Entity, src PackageSource) *Repo {
 	}
 }
 
-func RepoFromConfig(cfg RepoConfig) (*Repo, error) {
+func RepoFromConfig(ctx context.Context, cfg RepoConfig) (*Repo, error) {
 	entity, err := EntityFromConfig(cfg.SigningConfig)
 	if err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ func RepoFromConfig(cfg RepoConfig) (*Repo, error) {
 	if cfg.Files.Directory != "" {
 		src = NewLocalSource(cfg.Files)
 	} else if len(cfg.GitHubReleases.Repositories) > 0 {
-		src, err = NewGitHubReleasesSource(cfg.GitHubReleases)
+		src, err = NewGitHubReleasesSource(ctx, cfg.GitHubReleases)
 	}
 	if err != nil {
 		return nil, err

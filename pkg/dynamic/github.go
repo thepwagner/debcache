@@ -1,15 +1,19 @@
 package dynamic
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/md5"
 	"crypto/sha256"
+	"crypto/sha512"
 	"fmt"
+	"hash"
 	"io"
 	"log/slog"
 	"net/http"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -17,6 +21,7 @@ import (
 	"github.com/thepwagner/debcache/pkg/cache"
 	"github.com/thepwagner/debcache/pkg/debian"
 	"github.com/thepwagner/debcache/pkg/repo"
+	"github.com/thepwagner/debcache/pkg/signature"
 )
 
 type GitHubReleasesSource struct {
@@ -25,21 +30,30 @@ type GitHubReleasesSource struct {
 
 	cache         cache.Storage
 	architectures map[repo.Architecture]struct{}
-	repos         map[string]GitHubReleasesRepoConfig
+	repos         map[string]*releaseRepo
 }
 
 var _ PackageSource = (*GitHubReleasesSource)(nil)
 
 type GitHubReleasesConfig struct {
+	// Repositories is a map of GitHub repository `owner/name`s to configuration.
 	Repositories  map[string]GitHubReleasesRepoConfig `yaml:"repositories"`
 	Architectures []repo.Architecture                 `yaml:"architectures"`
-	Cache         cache.Config                        `yaml:"cache"`
+	// Cache will be used for storing downloaded assets.
+	Cache cache.Config `yaml:"cache"`
 }
 
 type GitHubReleasesRepoConfig struct {
+	Signer       *signature.FulcioIdentity `yaml:"rekor-signer"`
+	ChecksumFile string                    `yaml:"checksum_file"`
 }
 
-func NewGitHubReleasesSource(config GitHubReleasesConfig) (*GitHubReleasesSource, error) {
+type releaseRepo struct {
+	ChecksumFile string
+	verifier     signature.Verifier
+}
+
+func NewGitHubReleasesSource(ctx context.Context, config GitHubReleasesConfig) (*GitHubReleasesSource, error) {
 	client := github.NewClient(http.DefaultClient)
 
 	arches := make(map[repo.Architecture]struct{}, len(config.Architectures))
@@ -55,10 +69,31 @@ func NewGitHubReleasesSource(config GitHubReleasesConfig) (*GitHubReleasesSource
 		return nil, err
 	}
 
+	repos := make(map[string]*releaseRepo, len(config.Repositories))
+	for repoName, repoConfig := range config.Repositories {
+		log := slog.With(slog.String("github_repository", repoName))
+
+		release := releaseRepo{
+			ChecksumFile: repoConfig.ChecksumFile,
+		}
+		if repoConfig.Signer != nil {
+			verifier, err := signature.NewRekorVerifier(ctx, *repoConfig.Signer)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create rekor verifier: %w", err)
+			}
+			log.Debug("using rekor verifier")
+			release.verifier = verifier
+		} else {
+			log.Debug("verification disabled")
+			release.verifier = signature.AlwaysPass()
+		}
+		repos[repoName] = &release
+	}
+
 	return &GitHubReleasesSource{
 		http:          http.DefaultClient,
 		github:        client,
-		repos:         config.Repositories,
+		repos:         repos,
 		cache:         storage,
 		architectures: arches,
 	}, nil
@@ -66,11 +101,15 @@ func NewGitHubReleasesSource(config GitHubReleasesConfig) (*GitHubReleasesSource
 
 const assets = cache.Namespace("github-release-assets")
 
+var lineRe = regexp.MustCompile(`^([a-f0-9]+)\s+(\S+)$`)
+
 func (gh *GitHubReleasesSource) Packages(ctx context.Context) (PackageList, time.Time, error) {
 	ret := PackageList{}
 	var latest time.Time
-	for ghRepo := range gh.repos {
+	for ghRepo, releaseRepo := range gh.repos {
 		repoName := strings.SplitN(ghRepo, "/", 2)
+		verifier := releaseRepo.verifier
+
 		slog.Debug("listing releases", slog.String("repo_owner", repoName[0]), slog.String("repo_name", repoName[1]))
 		releases, _, err := gh.github.Repositories.ListReleases(ctx, repoName[0], repoName[1], &github.ListOptions{PerPage: 5})
 		if err != nil {
@@ -78,6 +117,13 @@ func (gh *GitHubReleasesSource) Packages(ctx context.Context) (PackageList, time
 		}
 		for _, release := range releases {
 			slog.Debug("inspecting release", slog.String("tag", release.GetTagName()), slog.Int("asset_count", len(release.Assets)))
+
+			// If we're processing checksums, grab that file first:
+			checksums, digester, err := gh.getCheckSums(ctx, ghRepo, *releaseRepo, release)
+			if err != nil {
+				return nil, time.Time{}, fmt.Errorf("getting checksums: %w", err)
+			}
+
 			var hasDeb bool
 			for _, ass := range release.Assets {
 				// Skip non-.deb:
@@ -91,21 +137,37 @@ func (gh *GitHubReleasesSource) Packages(ctx context.Context) (PackageList, time
 				if _, ok := gh.architectures[debArch]; !ok {
 					continue
 				}
-				slog.Debug("release has deb asset", slog.String("fn", fn))
+				log := slog.With(slog.String("fn", fn))
+				log.Debug("release has deb asset")
 
-				key := assets.Key(strings.ReplaceAll(ghRepo, "/", "_") + "_" + fn)
-				b, ok := gh.cache.Get(ctx, key)
-				if !ok {
-					res, err := gh.http.Get(ass.GetBrowserDownloadURL())
-					if err != nil {
-						return nil, time.Time{}, fmt.Errorf("getting asset: %w", err)
+				// Download and verify the .deb file:
+				b, err := gh.get(ctx, ghRepo, fn, ass.GetBrowserDownloadURL())
+				if err != nil {
+					return nil, time.Time{}, fmt.Errorf("getting asset: %w", err)
+				}
+				if len(checksums) == 0 {
+					// If we're not processing checksums, attempt to verify the .deb directly
+					if ok, err := verifier.Verify(ctx, release.GetTagName(), b); err != nil {
+						return nil, time.Time{}, fmt.Errorf("verifying asset: %w", err)
+					} else if !ok {
+						log.Warn("deb failed verification")
+						continue
 					}
-					defer res.Body.Close()
-					b, err = io.ReadAll(res.Body)
-					if err != nil {
-						return nil, time.Time{}, fmt.Errorf("reading asset: %w", err)
+				} else {
+					// Validate the checksum - don't worry about signature verification (the checksum file may have been signed, but we don't care here)
+					// It is OK that we might calculate sha256(b) twice.
+					expected, ok := checksums[fn]
+					if !ok {
+						return nil, time.Time{}, fmt.Errorf("deb not found in checksum file: %s", fn)
 					}
-					gh.cache.Add(ctx, key, b)
+
+					hash := digester()
+					if _, err := hash.Write(b); err != nil {
+						return nil, time.Time{}, fmt.Errorf("calculating checksum: %w", err)
+					}
+					if actual := fmt.Sprintf("%x", hash.Sum(nil)); actual != expected {
+						return nil, time.Time{}, fmt.Errorf("checksum mismatch on %s: expected %s, got %s", fn, expected, actual)
+					}
 				}
 
 				pkgData, err := debian.ParagraphFromDeb(bytes.NewReader(b))
@@ -144,10 +206,91 @@ func (gh *GitHubReleasesSource) Packages(ctx context.Context) (PackageList, time
 }
 
 func (gh *GitHubReleasesSource) Deb(ctx context.Context, filename string) ([]byte, error) {
-	fmt.Println(filename)
 	key := assets.Key(filename)
 	if b, ok := gh.cache.Get(ctx, key); ok {
 		return b, nil
 	}
 	return nil, nil
+}
+
+func (gh *GitHubReleasesSource) get(ctx context.Context, ghRepo, fn, url string) ([]byte, error) {
+	key := assets.Key(strings.ReplaceAll(ghRepo, "/", "_") + "_" + fn)
+	if b, ok := gh.cache.Get(ctx, key); ok {
+		return b, nil
+	}
+	res, err := gh.http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("getting asset: %w", err)
+	}
+	defer res.Body.Close()
+	b, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading asset: %w", err)
+	}
+	gh.cache.Add(ctx, key, b)
+	return b, nil
+}
+
+func (gh *GitHubReleasesSource) getCheckSums(ctx context.Context, ghRepo string, repoCfg releaseRepo, release *github.RepositoryRelease) (map[string]string, func() hash.Hash, error) {
+	if repoCfg.ChecksumFile == "" {
+		return nil, nil, nil
+	}
+
+	checksumFile := strings.ReplaceAll(repoCfg.ChecksumFile, "{{VERSION}}", release.GetTagName())
+	slog.Debug("looking for checksum file", slog.String("filename", checksumFile))
+
+	expectedChecksums := make(map[string]string)
+	for _, ass := range release.Assets {
+		fn := (*ass).GetName()
+		if fn != checksumFile {
+			continue
+		}
+
+		// Download and verify the signature of the checksum file:
+		b, err := gh.get(ctx, ghRepo, fn, ass.GetBrowserDownloadURL())
+		if err != nil {
+			return nil, nil, fmt.Errorf("downloading checksum file: %w", err)
+		}
+		if ok, err := repoCfg.verifier.Verify(ctx, release.GetTagName(), b); err != nil {
+			return nil, nil, fmt.Errorf("verifying asset: %w", err)
+		} else if !ok {
+			slog.Warn("deb failed verification")
+			continue
+		}
+
+		// Parse the file into a map of filenames to encoded hash:
+		var digestLen int
+		scanner := bufio.NewScanner(bytes.NewReader(b))
+		for scanner.Scan() {
+			m := lineRe.FindAllStringSubmatch(scanner.Text(), 1)
+			if len(m) == 0 {
+				continue
+			}
+
+			if dl := len(m[0][1]); digestLen == 0 {
+				digestLen = dl
+			} else if dl != digestLen {
+				return nil, nil, fmt.Errorf("invalid checksum file - lengths change from %d to %d", dl, digestLen)
+			}
+			expectedChecksums[m[0][2]] = m[0][1]
+		}
+		if err := scanner.Err(); err != nil {
+			return nil, nil, fmt.Errorf("reading checksums file: %w", err)
+		}
+
+		// Use the detected digest length to guess the digest algorithm:
+		var digester func() hash.Hash
+		switch digestLen {
+		case sha256.Size * 2:
+			digester = sha256.New
+		case sha512.Size * 2:
+			digester = sha512.New
+		default:
+			return nil, nil, fmt.Errorf("unknown digest length: %d", digestLen)
+		}
+
+		return expectedChecksums, digester, nil
+	}
+
+	return nil, nil, fmt.Errorf("checksum file %q not found", checksumFile)
 }

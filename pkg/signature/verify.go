@@ -12,3 +12,17 @@ type Config struct {
 type Verifier interface {
 	Verify(ctx context.Context, version string, deb []byte) (bool, error)
 }
+
+func AlwaysPass() Verifier {
+	return fixedVerifier(true)
+}
+
+func AlwaysFail() Verifier {
+	return fixedVerifier(false)
+}
+
+type fixedVerifier bool
+
+func (v fixedVerifier) Verify(_ context.Context, _ string, _ []byte) (bool, error) {
+	return bool(v), nil
+}
