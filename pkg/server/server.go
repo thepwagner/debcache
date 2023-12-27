@@ -24,7 +24,7 @@ func Run(ctx context.Context) error {
 		return err
 	}
 
-	handler, err := NewHandler(cfg)
+	handler, err := NewHandler(ctx, cfg)
 	if err != nil {
 		return err
 	}

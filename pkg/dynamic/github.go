@@ -17,6 +17,7 @@ import (
 	"github.com/thepwagner/debcache/pkg/cache"
 	"github.com/thepwagner/debcache/pkg/debian"
 	"github.com/thepwagner/debcache/pkg/repo"
+	"github.com/thepwagner/debcache/pkg/signature"
 )
 
 type GitHubReleasesSource struct {
@@ -25,21 +26,25 @@ type GitHubReleasesSource struct {
 
 	cache         cache.Storage
 	architectures map[repo.Architecture]struct{}
-	repos         map[string]GitHubReleasesRepoConfig
+	repos         map[string]signature.Verifier
 }
 
 var _ PackageSource = (*GitHubReleasesSource)(nil)
 
 type GitHubReleasesConfig struct {
+	// Repositories is a map of GitHub repository `owner/name`s to configuration.
 	Repositories  map[string]GitHubReleasesRepoConfig `yaml:"repositories"`
 	Architectures []repo.Architecture                 `yaml:"architectures"`
-	Cache         cache.Config                        `yaml:"cache"`
+	// Cache will be used for storing downloaded assets.
+	Cache cache.Config `yaml:"cache"`
 }
 
 type GitHubReleasesRepoConfig struct {
+	Signer       *signature.FulcioIdentity `yaml:"signer"`
+	ChecksumFile string                    `yaml:"checksum_file"`
 }
 
-func NewGitHubReleasesSource(config GitHubReleasesConfig) (*GitHubReleasesSource, error) {
+func NewGitHubReleasesSource(ctx context.Context, config GitHubReleasesConfig) (*GitHubReleasesSource, error) {
 	client := github.NewClient(http.DefaultClient)
 
 	arches := make(map[repo.Architecture]struct{}, len(config.Architectures))
@@ -55,10 +60,25 @@ func NewGitHubReleasesSource(config GitHubReleasesConfig) (*GitHubReleasesSource
 		return nil, err
 	}
 
+	repos := make(map[string]signature.Verifier, len(config.Repositories))
+	for repoName, repoConfig := range config.Repositories {
+		var verifier signature.Verifier
+		if repoConfig.Signer != nil {
+			verifier, err = signature.NewRekorVerifier(ctx, *repoConfig.Signer)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create rekor verifier: %w", err)
+			}
+		} else {
+			verifier = signature.AlwaysPass()
+		}
+
+		repos[repoName] = verifier
+	}
+
 	return &GitHubReleasesSource{
 		http:          http.DefaultClient,
 		github:        client,
-		repos:         config.Repositories,
+		repos:         repos,
 		cache:         storage,
 		architectures: arches,
 	}, nil
@@ -71,6 +91,8 @@ func (gh *GitHubReleasesSource) Packages(ctx context.Context) (PackageList, time
 	var latest time.Time
 	for ghRepo := range gh.repos {
 		repoName := strings.SplitN(ghRepo, "/", 2)
+		verifier := gh.repos[ghRepo]
+
 		slog.Debug("listing releases", slog.String("repo_owner", repoName[0]), slog.String("repo_name", repoName[1]))
 		releases, _, err := gh.github.Repositories.ListReleases(ctx, repoName[0], repoName[1], &github.ListOptions{PerPage: 5})
 		if err != nil {
@@ -91,7 +113,8 @@ func (gh *GitHubReleasesSource) Packages(ctx context.Context) (PackageList, time
 				if _, ok := gh.architectures[debArch]; !ok {
 					continue
 				}
-				slog.Debug("release has deb asset", slog.String("fn", fn))
+				log := slog.With(slog.String("fn", fn))
+				log.Debug("release has deb asset")
 
 				key := assets.Key(strings.ReplaceAll(ghRepo, "/", "_") + "_" + fn)
 				b, ok := gh.cache.Get(ctx, key)
@@ -106,6 +129,13 @@ func (gh *GitHubReleasesSource) Packages(ctx context.Context) (PackageList, time
 						return nil, time.Time{}, fmt.Errorf("reading asset: %w", err)
 					}
 					gh.cache.Add(ctx, key, b)
+				}
+
+				if ok, err := verifier.Verify(ctx, release.GetTagName(), b); err != nil {
+					return nil, time.Time{}, fmt.Errorf("verifying asset: %w", err)
+				} else if !ok {
+					log.Warn("deb failed verification")
+					continue
 				}
 
 				pkgData, err := debian.ParagraphFromDeb(bytes.NewReader(b))
@@ -144,7 +174,6 @@ func (gh *GitHubReleasesSource) Packages(ctx context.Context) (PackageList, time
 }
 
 func (gh *GitHubReleasesSource) Deb(ctx context.Context, filename string) ([]byte, error) {
-	fmt.Println(filename)
 	key := assets.Key(filename)
 	if b, ok := gh.cache.Get(ctx, key); ok {
 		return b, nil

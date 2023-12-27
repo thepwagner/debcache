@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -60,7 +61,7 @@ func loadConfig() (*Config, error) {
 	return &cfg, nil
 }
 
-func BuildRepo(name string, cfg RepoConfig) (repo.Repo, error) {
+func BuildRepo(ctx context.Context, name string, cfg RepoConfig) (repo.Repo, error) {
 	slog.Debug("building repo", slog.String("repo", name))
 
 	var base repo.Repo
@@ -68,7 +69,7 @@ func BuildRepo(name string, cfg RepoConfig) (repo.Repo, error) {
 	if cfg.Upstream.URL != "" {
 		base, err = repo.UpstreamFromConfig(cfg.Upstream)
 	} else if cfg.Dynamic.SigningConfig.SigningKey != "" || cfg.Dynamic.SigningConfig.SigningKeyPath != "" {
-		base, err = dynamic.RepoFromConfig(cfg.Dynamic)
+		base, err = dynamic.RepoFromConfig(ctx, cfg.Dynamic)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("error building base repo: %w", err)

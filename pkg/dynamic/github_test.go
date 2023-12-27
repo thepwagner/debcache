@@ -13,14 +13,14 @@ func TestGitHubReleasesSource(t *testing.T) {
 	t.Skip("be nice to github")
 	t.Parallel()
 
-	gh, err := dynamic.NewGitHubReleasesSource(dynamic.GitHubReleasesConfig{
+	ctx := context.Background()
+	gh, err := dynamic.NewGitHubReleasesSource(ctx, dynamic.GitHubReleasesConfig{
 		Repositories: map[string]dynamic.GitHubReleasesRepoConfig{
 			"sigstore/cosign": {},
 		},
 	})
 	require.NoError(t, err)
 
-	ctx := context.Background()
 	pkgs, ts, err := gh.Packages(ctx)
 	require.NoError(t, err)
 	assert.False(t, ts.IsZero())
