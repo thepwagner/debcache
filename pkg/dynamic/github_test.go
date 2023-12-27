@@ -76,9 +76,9 @@ func TestGitHubReleasesSource(t *testing.T) {
 
 func TestGitHubReleasesSource_Private(t *testing.T) {
 	t.Parallel()
-	tok := os.Getenv("GITHUB_TOKEN")
+	tok := os.Getenv("TEST_GITHUB_TOKEN")
 	if tok == "" {
-		t.Skip("no GITHUB_TOKEN")
+		t.Skip("no TEST_GITHUB_TOKEN")
 	}
 
 	ctx := context.Background()
