@@ -40,7 +40,7 @@ type GitHubReleasesConfig struct {
 }
 
 type GitHubReleasesRepoConfig struct {
-	Signer       *signature.FulcioIdentity `yaml:"signer"`
+	Signer       *signature.FulcioIdentity `yaml:"rekor-signer"`
 	ChecksumFile string                    `yaml:"checksum_file"`
 }
 
@@ -62,14 +62,17 @@ func NewGitHubReleasesSource(ctx context.Context, config GitHubReleasesConfig) (
 
 	repos := make(map[string]signature.Verifier, len(config.Repositories))
 	for repoName, repoConfig := range config.Repositories {
+		log := slog.With(slog.String("github_repository", repoName))
 		var verifier signature.Verifier
 		if repoConfig.Signer != nil {
 			verifier, err = signature.NewRekorVerifier(ctx, *repoConfig.Signer)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create rekor verifier: %w", err)
 			}
+			log.Debug("using rekor verifier")
 		} else {
 			verifier = signature.AlwaysPass()
+			log.Debug("verification disabled")
 		}
 
 		repos[repoName] = verifier
