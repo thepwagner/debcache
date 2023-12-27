@@ -19,10 +19,11 @@ type Cache struct {
 var _ Repo = (*Cache)(nil)
 
 const (
-	releases = cache.Namespace("releases")
-	packages = cache.Namespace("packages")
-	byHash   = cache.Namespace("by-hash")
-	pool     = cache.Namespace("pool")
+	releases     = cache.Namespace("releases")
+	packages     = cache.Namespace("packages")
+	byHash       = cache.Namespace("by-hash")
+	pool         = cache.Namespace("pool")
+	translations = cache.Namespace("translations")
 )
 
 func CacheFromConfig(src Repo, cfg cache.Config) (*Cache, error) {
@@ -84,6 +85,28 @@ func (c Cache) Packages(ctx context.Context, dist Distribution, component Compon
 	}
 
 	v, err := c.src.Packages(ctx, dist, component, arch, compression)
+	if err != nil {
+		return nil, err
+	}
+	c.storage.Add(ctx, key, v)
+	return v, nil
+}
+func (c Cache) Translations(ctx context.Context, dist Distribution, component Component, lang Language, compression Compression) ([]byte, error) {
+	key := translations.Key(dist.String(), component.String(), lang.String(), compression.String())
+	v, ok := c.storage.Get(ctx, key)
+	slog.Debug("cached Translations",
+		slog.String("request_id", middleware.GetReqID(ctx)),
+		slog.Any("dist", dist),
+		slog.Any("component", component),
+		slog.Any("lang", lang),
+		slog.String("compression", string(compression)),
+		slog.Bool("cache_hit", ok),
+	)
+	if ok {
+		return v, nil
+	}
+
+	v, err := c.src.Translations(ctx, dist, component, lang, compression)
 	if err != nil {
 		return nil, err
 	}

@@ -42,12 +42,10 @@ func NewRekorVerifier(ctx context.Context, identity FulcioIdentity) (*RekorVerif
 	if err != nil {
 		return nil, err
 	}
-
 	regexps, err := identity.regexps()
 	if err != nil {
 		return nil, err
 	}
-
 	return &RekorVerifier{
 		client:  client,
 		pubs:    pubs,
@@ -66,11 +64,10 @@ func (v *RekorVerifier) Verify(ctx context.Context, version string, deb []byte) 
 		log.Debug("no entry found")
 		return false, nil
 	}
-	log.Debug("entry found", slog.Any("entries", entries))
+	log.Debug("entries found", slog.Any("entries", entries))
 
 	for _, entry := range entries {
-		ok, err := v.verifyEntry(ctx, version, entry)
-		if err != nil {
+		if ok, err := v.verifyEntry(ctx, version, entry); err != nil {
 			return false, fmt.Errorf("verifying entry: %w", err)
 		} else if ok {
 			log.Debug("entry verified")
@@ -78,7 +75,8 @@ func (v *RekorVerifier) Verify(ctx context.Context, version string, deb []byte) 
 		}
 	}
 
-	return false, fmt.Errorf("not implemented")
+	log.Debug("no entries could be verified", slog.Any("entries", entries))
+	return false, nil
 }
 
 func (v RekorVerifier) findEntry(ctx context.Context, digest string) ([]string, error) {

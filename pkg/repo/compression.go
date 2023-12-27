@@ -12,12 +12,15 @@ type Compression string
 
 const (
 	CompressionNone = ""
+	CompressionBZIP = "bz2"
 	CompressionGZIP = "gz"
 	CompressionXZ   = "xz"
 )
 
 func ParseCompression(s string) Compression {
 	switch s {
+	case "bz2", ".bz2":
+		return CompressionBZIP
 	case "gz", ".gz":
 		return CompressionGZIP
 	case "xz", ".xz":
@@ -33,6 +36,8 @@ func (c Compression) String() string {
 
 func (c Compression) Extension() string {
 	switch c {
+	case CompressionBZIP:
+		return ".bz2"
 	case CompressionGZIP:
 		return ".gz"
 	case CompressionXZ:
@@ -68,6 +73,9 @@ func (c Compression) Compress(data []byte) ([]byte, error) {
 			return nil, err
 		}
 		return buf.Bytes(), nil
+
+	case CompressionBZIP:
+		return nil, fmt.Errorf("bzip compression not implemented")
 
 	case CompressionNone:
 		return data, nil

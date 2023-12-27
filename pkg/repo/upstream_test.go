@@ -34,6 +34,16 @@ func TestUpstream_Packages(t *testing.T) {
 	require.Equal(t, []byte("1"), res)
 }
 
+func TestUpstream_Translations(t *testing.T) {
+	t.Parallel()
+	srv := countingServer(t, "/dists/test/component/i18n/Translation-de.bz2")
+	u := repo.NewUpstream(srv)
+
+	res, err := u.Translations(context.Background(), "test", "component", "de", repo.CompressionBZIP)
+	require.NoError(t, err)
+	require.Equal(t, []byte("1"), res) // das ist gut
+}
+
 func TestUpstream_ByHash(t *testing.T) {
 	t.Parallel()
 	srv := countingServer(t, "/dists/test/component/binary-arch/by-hash/SHA256/abc123")
