@@ -33,6 +33,10 @@ func NewHandler(cfg *Config) (*Handler, error) {
 	h.mux.Get("/{repo}/dists/{dist}/{component}/binary-{architecture}/Packages{compression:(.[gx]z|)}", h.Packages)
 	h.mux.Get("/{repo}/dists/{dist}/{component}/binary-{architecture}/by-hash/{digestAlgo}/{digest}", h.ByHash)
 
+	h.mux.Get("/{repo}/dists/{dist}/{component}/i18n/Translation-{lang:[^.]+}", h.Translations)
+	h.mux.Get("/{repo}/dists/{dist}/{component}/i18n/Translation-{lang:[^.]+}.{compression}", h.Translations)
+	h.mux.Get("/{repo}/dists/{dist}/{component}/i18n/by-hash/{digestAlgo}/{digest}", h.ByHash)
+
 	h.mux.Get("/{repo}/pool/{component}/{p}/{package}/*", h.Pool)
 
 	for name, cfg := range cfg.Repos {
@@ -223,4 +227,41 @@ func (h Handler) Pool(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, _ = w.Write(b)
+}
+
+func (h Handler) Translations(w http.ResponseWriter, r *http.Request) {
+	repoName := chi.URLParam(r, "repo")
+	dist := repo.Distribution(chi.URLParam(r, "dist"))
+	component := repo.Component(chi.URLParam(r, "component"))
+	lang := chi.URLParam(r, "lang")
+	compression := repo.ParseCompression(chi.URLParam(r, "compression"))
+	slog.Info("handling Translations",
+		slog.String("request_id", middleware.GetReqID(r.Context())),
+		slog.String("repo", repoName),
+		slog.Any("dist", dist),
+		slog.Any("component", component),
+		slog.Any("lang", lang),
+		slog.Any("compression", compression),
+	)
+
+	repo, ok := h.repos[repoName]
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+
+	_ = repo
+	// res, err := repo.Translations(r.Context(), dist, component, lang, compression)
+	// if err != nil {
+	// 	slog.Error("repo.Translations", slog.String("error", err.Error()))
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
+	// if len(res) == 0 {
+	// 	http.NotFound(w, r)
+	// 	return
+	// }
+
+	// _, _ = w.Write(res)
+
 }
