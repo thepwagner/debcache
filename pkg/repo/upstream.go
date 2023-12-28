@@ -18,8 +18,7 @@ type Upstream struct {
 }
 
 type UpstreamConfig struct {
-	URL    string `yaml:"url"`
-	Verify bool   `yaml:"verify"`
+	URL string `yaml:"url"`
 }
 
 var _ Repo = (*Upstream)(nil)

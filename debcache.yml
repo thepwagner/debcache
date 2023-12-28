@@ -4,30 +4,46 @@ repos:
   debian:
     upstream:
       url: https://deb.debian.org/debian
-      verify: false
     cache:
       url: file://tmp/debian
   debian-security:
     upstream:
       url: https://deb.debian.org/debian-security
-      verify: false
     cache:
       url: file://tmp/debian-security
-  dynamic:
+  local:
+    dynamic:
+      signingKeyPath: "tmp/key.asc"
+      files:
+        dir: tmp/debs/
+  github:
     dynamic:
       signingKeyPath: "tmp/key.asc"
       github-releases:
         cache:
           url: file://tmp/github
+        token: env.TEST_GITHUB_TOKEN
         repositories:
-          sigstore/cosign:
+          aquasecurity/trivy:
             rekor-signer:
-              issuer: "https://accounts.google.com"
-              subject-alt-name: "keyless@projectsigstore.iam.gserviceaccount.com"
+              github-workflow-ref: "refs/tags/{{VERSION}}"
+              github-workflow-trigger: "push"
           getsops/sops:
             rekor-signer:
               github-workflow-ref: "refs/tags/{{VERSION}}"
               github-workflow-trigger: "push"
-
-      # files:
-      #   dir: tmp/debs/
+          goreleaser/goreleaser:
+            checksums: checksums.txt
+            rekor-signer:
+              github-workflow-ref: "refs/tags/{{VERSION}}"
+              github-workflow-trigger: "push"
+          opentofu/opentofu:
+            checksums: tofu_{{VERSION_WITHOUT_V}}_SHA256SUMS
+            rekor-signer:
+              github-workflow-ref: "refs/heads/v1.6"
+              github-workflow-trigger: "workflow_dispatch"
+          sigstore/cosign:
+            rekor-signer:
+              issuer: "https://accounts.google.com"
+              subject-alt-name: "keyless@projectsigstore.iam.gserviceaccount.com"
+          thepwagner/debcache:

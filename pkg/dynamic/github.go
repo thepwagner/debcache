@@ -12,6 +12,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -45,7 +46,7 @@ type GitHubReleasesConfig struct {
 
 type GitHubReleasesRepoConfig struct {
 	Signer       *signature.FulcioIdentity `yaml:"rekor-signer"`
-	ChecksumFile string                    `yaml:"checksum_file"`
+	ChecksumFile string                    `yaml:"checksums"`
 }
 
 type releaseRepo struct {
@@ -56,15 +57,30 @@ type releaseRepo struct {
 func NewGitHubReleasesSource(ctx context.Context, config GitHubReleasesConfig) (*GitHubReleasesSource, error) {
 	client := github.NewClient(&http.Client{})
 	if config.Token != "" {
-		client = client.WithAuthToken(config.Token)
+		var tok string
+		if strings.HasPrefix(config.Token, "env.") {
+			tok = os.Getenv(strings.TrimPrefix(config.Token, "env."))
+		} else {
+			tok = config.Token
+		}
+		client = client.WithAuthToken(tok)
 	}
 
 	arches := make(map[repo.Architecture]struct{}, len(config.Architectures))
 	for _, arch := range config.Architectures {
 		arches[arch] = struct{}{}
+
+		// Hack for aquasec/trivy file naming...
+		switch arch {
+		case "amd64":
+			arches["Linux-64bit"] = struct{}{}
+		case "arm64":
+			arches["Linux-ARM64"] = struct{}{}
+		}
 	}
 	if len(arches) == 0 {
 		arches["amd64"] = struct{}{}
+		arches["Linux-64bit"] = struct{}{}
 	}
 
 	storage, err := cache.StorageFromConfig(config.Cache)
@@ -190,7 +206,7 @@ func (gh *GitHubReleasesSource) Packages(ctx context.Context) (PackageList, time
 					return nil, time.Time{}, fmt.Errorf("digesting asset: %w", err)
 				}
 
-				pkg["Filename"] = "pool/main/p/pkg/" + strings.ReplaceAll(ghRepo, "/", "_") + "_" + fn
+				pkg["Filename"] = "pool/main/p/pkg/" + fmt.Sprintf("%s_%s_%d.deb", repoName[0], repoName[1], ass.GetID())
 				pkg["Size"] = fmt.Sprintf("%d", len(b))
 				pkg["MD5sum"] = fmt.Sprintf("%x", md5sum.Sum(nil))
 				pkg["SHA256"] = fmt.Sprintf("%x", sha256sum.Sum(nil))
@@ -198,7 +214,7 @@ func (gh *GitHubReleasesSource) Packages(ctx context.Context) (PackageList, time
 				if assetTime := ass.GetUpdatedAt().Time; assetTime.After(latest) {
 					latest = assetTime
 				}
-				ret.Add("main", debArch, pkg)
+				ret.Add("main", repo.Architecture(pkg["Architecture"]), pkg)
 				hasDeb = true
 			}
 
@@ -219,7 +235,7 @@ func (gh *GitHubReleasesSource) Deb(ctx context.Context, filename string) ([]byt
 }
 
 func (gh *GitHubReleasesSource) get(ctx context.Context, owner, repo string, assetID int64) ([]byte, error) {
-	key := assets.Key(fmt.Sprintf("%s_%s_%d", owner, repo, assetID))
+	key := assets.Key(fmt.Sprintf("%s_%s_%d.deb", owner, repo, assetID))
 	if b, ok := gh.cache.Get(ctx, key); ok {
 		return b, nil
 	}
@@ -246,6 +262,7 @@ func (gh *GitHubReleasesSource) getCheckSums(ctx context.Context, owner, repo st
 	}
 
 	checksumFile := strings.ReplaceAll(repoCfg.ChecksumFile, "{{VERSION}}", release.GetTagName())
+	checksumFile = strings.ReplaceAll(checksumFile, "{{VERSION_WITHOUT_V}}", strings.TrimPrefix(release.GetTagName(), "v"))
 	slog.Debug("looking for checksum file", slog.String("filename", checksumFile))
 
 	expectedChecksums := make(map[string]string)
