@@ -12,6 +12,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -56,7 +57,13 @@ type releaseRepo struct {
 func NewGitHubReleasesSource(ctx context.Context, config GitHubReleasesConfig) (*GitHubReleasesSource, error) {
 	client := github.NewClient(&http.Client{})
 	if config.Token != "" {
-		client = client.WithAuthToken(config.Token)
+		var tok string
+		if strings.HasPrefix(config.Token, "env.") {
+			tok = os.Getenv(strings.TrimPrefix(config.Token, "env."))
+		} else {
+			tok = config.Token
+		}
+		client = client.WithAuthToken(tok)
 	}
 
 	arches := make(map[repo.Architecture]struct{}, len(config.Architectures))

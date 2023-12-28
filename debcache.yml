@@ -22,6 +22,7 @@ repos:
       github-releases:
         cache:
           url: file://tmp/github
+        token: env.TEST_GITHUB_TOKEN
         repositories:
           aquasecurity/trivy:
             rekor-signer:
@@ -45,4 +46,4 @@ repos:
             rekor-signer:
               issuer: "https://accounts.google.com"
               subject-alt-name: "keyless@projectsigstore.iam.gserviceaccount.com"
-      
+          thepwagner/debcache:
