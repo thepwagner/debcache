@@ -149,13 +149,14 @@ func (gh *GitHubReleasesSource) Packages(ctx context.Context) (PackageList, time
 				if filepath.Ext(fn) != ".deb" {
 					continue
 				}
+				log := slog.With(slog.String("fn", fn))
 
 				// Focus only on the architectures of interest:
 				debArch := repo.Architecture(fn[strings.LastIndex(fn, "_")+1 : len(fn)-4])
 				if _, ok := gh.architectures[debArch]; !ok {
+					log.Debug("release has other arch deb")
 					continue
 				}
-				log := slog.With(slog.String("fn", fn))
 				log.Debug("release has deb asset")
 
 				// Download and verify the .deb file:
@@ -163,7 +164,7 @@ func (gh *GitHubReleasesSource) Packages(ctx context.Context) (PackageList, time
 				if err != nil {
 					return nil, time.Time{}, fmt.Errorf("getting asset: %w", err)
 				}
-				log.Debug("download completed", slog.Int("bytes", len(b)))
+				log.Debug("asset download complete", slog.Int("bytes", len(b)))
 
 				if len(checksums) == 0 {
 					// If we're not processing checksums, attempt to verify the .deb directly
@@ -189,6 +190,7 @@ func (gh *GitHubReleasesSource) Packages(ctx context.Context) (PackageList, time
 					if actual := fmt.Sprintf("%x", hash.Sum(nil)); actual != expected {
 						return nil, time.Time{}, fmt.Errorf("checksum mismatch on %s: expected %s, got %s", fn, expected, actual)
 					}
+					log.Debug("checksum verified", slog.String("expected", expected))
 				}
 
 				pkgData, err := debian.ParagraphFromDeb(bytes.NewReader(b))
@@ -284,6 +286,7 @@ func (gh *GitHubReleasesSource) getCheckSums(ctx context.Context, owner, repo st
 			slog.Warn("deb failed verification")
 			continue
 		}
+		slog.Debug("checksum file passed signature verification")
 
 		// Parse the file into a map of filenames to encoded hash:
 		var digestLen int
