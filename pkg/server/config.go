@@ -24,15 +24,6 @@ type RepoConfig struct {
 	Config map[string]any `yaml:",inline"`
 }
 
-type FileCacheConfig struct {
-	Path   string     `yaml:"path"`
-	Source RepoConfig `yaml:"source"`
-}
-
-type MemoryCacheConfig struct {
-	Source RepoConfig `yaml:"source"`
-}
-
 func loadConfig() (*Config, error) {
 	var cfg Config
 
@@ -74,12 +65,6 @@ func loadConfig() (*Config, error) {
 func BuildRepo(ctx context.Context, name string, cfg RepoConfig) (repo.Repo, error) {
 	slog.Debug("building repo", slog.String("repo", name), slog.String("type", cfg.Type), slog.Any("config", cfg.Config))
 
-	// TODO: this turned into a big mess, and i am too tired to clean it up atm
-	// i like the RepoConfig struct
-	// i don't like how the cache.Source fields need to be declared locally to avoid circular imports
-	// i don't like how much this switch looks like TypedConfig
-	//    - maybe TypedConfig dies, it was great for model tests
-	//    - maybe we just pass the map[string]any to the package? (probably an exception for cache sources)
 	switch cfg.Type {
 	case "dynamic":
 		dynCfg, err := decodeSource[dynamic.RepoConfig](cfg.Config)
