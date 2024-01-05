@@ -13,8 +13,8 @@ import (
 
 // Upstream is a remote repository.
 type Upstream struct {
-	baseURL url.URL
-	client  *http.Client
+	URL    url.URL
+	client *http.Client
 }
 
 type UpstreamConfig struct {
@@ -34,8 +34,8 @@ func UpstreamFromConfig(cfg UpstreamConfig) (*Upstream, error) {
 
 func NewUpstream(baseURL url.URL) *Upstream {
 	return &Upstream{
-		baseURL: baseURL,
-		client:  http.DefaultClient,
+		URL:    baseURL,
+		client: http.DefaultClient,
 	}
 }
 
@@ -64,7 +64,7 @@ func (u Upstream) Pool(ctx context.Context, component Component, pkg, filename s
 }
 
 func (u Upstream) get(ctx context.Context, path ...string) ([]byte, error) {
-	reqURL := u.baseURL.JoinPath(path...).String()
+	reqURL := u.URL.JoinPath(path...).String()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)

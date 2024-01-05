@@ -11,14 +11,25 @@ import (
 )
 
 type FileStorage struct {
-	dir   string
+	Path  string
 	ttl   time.Duration
 	nsTTL map[Namespace]time.Duration
 }
 
-func NewFileStorage(dir string, ttl time.Duration) *FileStorage {
+type FileConfig struct {
+	Path string        `yaml:"path"`
+	TTL  time.Duration `yaml:"ttl"`
+}
+
+func NewFileStorage(cfg FileConfig) *FileStorage {
+	var ttl time.Duration
+	if cfg.TTL == 0 {
+		ttl = time.Hour
+	} else {
+		ttl = cfg.TTL
+	}
 	return &FileStorage{
-		dir:   dir,
+		Path:  cfg.Path,
 		ttl:   ttl,
 		nsTTL: map[Namespace]time.Duration{},
 	}
@@ -27,7 +38,7 @@ func NewFileStorage(dir string, ttl time.Duration) *FileStorage {
 var _ Storage = (*FileStorage)(nil)
 
 func (f *FileStorage) Get(_ context.Context, key Key) ([]byte, bool) {
-	p := filepath.Join(f.dir, string(key))
+	p := filepath.Join(f.Path, string(key))
 
 	ttl, ok := f.nsTTL[key.Namespace()]
 	if !ok {
@@ -54,7 +65,7 @@ func (f *FileStorage) Get(_ context.Context, key Key) ([]byte, bool) {
 }
 
 func (f *FileStorage) Add(_ context.Context, key Key, value []byte) {
-	p := filepath.Join(f.dir, string(key))
+	p := filepath.Join(f.Path, string(key))
 	if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
 		slog.Error("FileCacheStorage.add mkdir error", slog.String("error", err.Error()))
 		return

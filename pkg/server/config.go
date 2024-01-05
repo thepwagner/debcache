@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -19,9 +20,8 @@ type Config struct {
 }
 
 type RepoConfig struct {
-	Upstream repo.UpstreamConfig `yaml:"upstream"`
-	Dynamic  dynamic.RepoConfig  `yaml:"dynamic"`
-	Cache    cache.Config        `yaml:"cache"`
+	Type   string         `yaml:"type"`
+	Config map[string]any `yaml:",inline"`
 }
 
 func loadConfig() (*Config, error) {
@@ -51,8 +51,9 @@ func loadConfig() (*Config, error) {
 	if len(cfg.Repos) == 0 {
 		cfg.Repos = map[string]RepoConfig{
 			"debian": {
-				Upstream: repo.UpstreamConfig{
-					URL: "https://deb.debian.org/debian",
+				Type: "upstream",
+				Config: map[string]any{
+					"url": "https://deb.debian.org/debian",
 				},
 			},
 		}
@@ -62,23 +63,66 @@ func loadConfig() (*Config, error) {
 }
 
 func BuildRepo(ctx context.Context, name string, cfg RepoConfig) (repo.Repo, error) {
-	slog.Debug("building repo", slog.String("repo", name))
+	slog.Debug("building repo", slog.String("repo", name), slog.String("type", cfg.Type), slog.Any("config", cfg.Config))
 
-	var base repo.Repo
-	var err error
-	if cfg.Upstream.URL != "" {
-		base, err = repo.UpstreamFromConfig(cfg.Upstream)
-	} else if cfg.Dynamic.SigningConfig.SigningKey != "" || cfg.Dynamic.SigningConfig.SigningKeyPath != "" {
-		base, err = dynamic.RepoFromConfig(ctx, cfg.Dynamic)
+	switch cfg.Type {
+	case "dynamic":
+		dynCfg, err := decodeSource[dynamic.RepoConfig](cfg.Config)
+		if err != nil {
+			return nil, fmt.Errorf("error decoding dynamic config: %w", err)
+		}
+		return dynamic.RepoFromConfig(ctx, *dynCfg)
+
+	case "file-cache":
+		src, err := newCacheSource(ctx, fmt.Sprintf("file-cache.%s", name), cfg.Config["source"])
+		if err != nil {
+			return nil, fmt.Errorf("error building file-cache source: %w", err)
+		}
+		cacheCfg, err := decodeSource[cache.FileConfig](cfg.Config)
+		if err != nil {
+			return nil, fmt.Errorf("error decoding file-cache config: %w", err)
+		}
+		return repo.NewCache(src, cache.NewFileStorage(*cacheCfg)), nil
+
+	case "memory-cache":
+		src, err := newCacheSource(ctx, fmt.Sprintf("memory-cache.%s", name), cfg.Config["source"])
+		if err != nil {
+			return nil, fmt.Errorf("error building memory-cache source: %w", err)
+		}
+		cacheCfg, err := decodeSource[cache.LRUConfig](cfg.Config)
+		if err != nil {
+			return nil, fmt.Errorf("error decoding memory-cache config: %w", err)
+		}
+		return repo.NewCache(src, cache.NewLRUStorage(*cacheCfg)), nil
+
+	case "upstream":
+		cacheCfg, err := decodeSource[repo.UpstreamConfig](cfg.Config)
+		if err != nil {
+			return nil, fmt.Errorf("error decoding upstream config: %w", err)
+		}
+		return repo.UpstreamFromConfig(*cacheCfg)
 	}
+
+	return nil, fmt.Errorf("unknown repo type %q", cfg.Type)
+}
+
+func decodeSource[T any](src any) (*T, error) {
+	// mapstructure doesn't work here: so cycle through YAML
+	var buf bytes.Buffer
+	if err := yaml.NewEncoder(&buf).Encode(src); err != nil {
+		return nil, fmt.Errorf("error encoding cache source config: %w", err)
+	}
+	var cfg T
+	if err := yaml.NewDecoder(&buf).Decode(&cfg); err != nil {
+		return nil, fmt.Errorf("error decoding cache source config: %w", err)
+	}
+	return &cfg, nil
+}
+
+func newCacheSource(ctx context.Context, name string, src any) (repo.Repo, error) {
+	srcCfg, err := decodeSource[RepoConfig](src)
 	if err != nil {
-		return nil, fmt.Errorf("error building base repo: %w", err)
-	} else if base == nil {
-		return nil, fmt.Errorf("no repository configured")
+		return nil, fmt.Errorf("error building file-cache source: %w", err)
 	}
-
-	if cfg.Cache.URL == "" {
-		return base, nil
-	}
-	return repo.CacheFromConfig(base, cfg.Cache)
+	return BuildRepo(ctx, name, *srcCfg)
 }
