@@ -4,27 +4,16 @@ Caching proxy for debian packages.
 
 ### Features:
 
-* Acts as a pull-through cache for an existing repository.
+* Acts as a pull-through cache for existing repositories.
 * Acts as a dynamic repository for any set of packages:
-    * Loaded from a directory on disk.
-    * Attached to GitHub releases.
+    * Lists debs in a directory on disk.
+    * Discovers debs attached to releases as a GitHub repository.
         * Optional `CHECKSUM.txt` verification.
         * Optional cosign verification of signed packages or signed `CHECKSUM.txt` files.
-
+        * Clearly optimized for `goreleaser` projects ❤️.
 
 ### TODO:
 
-- Change how repo caches are configured
-    * URLs are awkward
-     * They are less flexible/nestable than the code affords
-
-```yaml
-repos:
-  debian:
-    type: cached-file
-    path: ./tmp/debian
-    source: meow
-```
-
 - Tracing/metrics?
-- More cacheing of GitHub results (ideally: informed by metrics)
+- More caching of GitHub results (ideally: informed by metrics)
+- More caching of cosign results (ideally: informed by metrics)

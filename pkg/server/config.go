@@ -82,7 +82,7 @@ func BuildRepo(ctx context.Context, name string, cfg RepoConfig) (repo.Repo, err
 	//    - maybe we just pass the map[string]any to the package? (probably an exception for cache sources)
 	switch cfg.Type {
 	case "dynamic":
-		dynCfg, err := decodeSource[dynamic.RepoConfig](name, cfg.Config)
+		dynCfg, err := decodeSource[dynamic.RepoConfig](cfg.Config)
 		if err != nil {
 			return nil, fmt.Errorf("error decoding dynamic config: %w", err)
 		}
@@ -93,7 +93,7 @@ func BuildRepo(ctx context.Context, name string, cfg RepoConfig) (repo.Repo, err
 		if err != nil {
 			return nil, fmt.Errorf("error building file-cache source: %w", err)
 		}
-		cacheCfg, err := decodeSource[cache.FileConfig](name, cfg.Config)
+		cacheCfg, err := decodeSource[cache.FileConfig](cfg.Config)
 		if err != nil {
 			return nil, fmt.Errorf("error decoding file-cache config: %w", err)
 		}
@@ -104,14 +104,14 @@ func BuildRepo(ctx context.Context, name string, cfg RepoConfig) (repo.Repo, err
 		if err != nil {
 			return nil, fmt.Errorf("error building memory-cache source: %w", err)
 		}
-		cacheCfg, err := decodeSource[cache.LRUConfig](name, cfg.Config)
+		cacheCfg, err := decodeSource[cache.LRUConfig](cfg.Config)
 		if err != nil {
 			return nil, fmt.Errorf("error decoding memory-cache config: %w", err)
 		}
 		return repo.NewCache(src, cache.NewLRUStorage(*cacheCfg)), nil
 
 	case "upstream":
-		cacheCfg, err := decodeSource[repo.UpstreamConfig](name, cfg.Config)
+		cacheCfg, err := decodeSource[repo.UpstreamConfig](cfg.Config)
 		if err != nil {
 			return nil, fmt.Errorf("error decoding upstream config: %w", err)
 		}
@@ -121,7 +121,7 @@ func BuildRepo(ctx context.Context, name string, cfg RepoConfig) (repo.Repo, err
 	return nil, fmt.Errorf("unknown repo type %q", cfg.Type)
 }
 
-func decodeSource[T any](name string, src any) (*T, error) {
+func decodeSource[T any](src any) (*T, error) {
 	// mapstructure doesn't work here: so cycle through YAML
 	var buf bytes.Buffer
 	if err := yaml.NewEncoder(&buf).Encode(src); err != nil {
@@ -135,7 +135,7 @@ func decodeSource[T any](name string, src any) (*T, error) {
 }
 
 func newCacheSource(ctx context.Context, name string, src any) (repo.Repo, error) {
-	srcCfg, err := decodeSource[RepoConfig](name, src)
+	srcCfg, err := decodeSource[RepoConfig](src)
 	if err != nil {
 		return nil, fmt.Errorf("error building file-cache source: %w", err)
 	}

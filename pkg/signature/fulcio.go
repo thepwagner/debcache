@@ -135,6 +135,13 @@ func (i FulcioIdentity) regexps() (map[string]*regexp.Regexp, error) {
 	return ret, nil
 }
 
+var (
+	oidSubjectKeyIdentifier = asn1.ObjectIdentifier{2, 5, 29, 14}
+	oidKeyUsage             = asn1.ObjectIdentifier{2, 5, 29, 15}
+	authorityKeyIdentifier  = asn1.ObjectIdentifier{2, 5, 29, 35}
+	oidExtendedKeyUsage     = asn1.ObjectIdentifier{2, 5, 29, 37}
+)
+
 func decodeExtension(e pkix.Extension) (ret string, err error) {
 	switch {
 	// BEGIN: Deprecated
@@ -205,6 +212,12 @@ func decodeExtension(e pkix.Extension) (ret string, err error) {
 				return string(v.Bytes), nil
 			}
 		}
+
+	// Ignore these extensions
+	case e.Id.Equal(oidSubjectKeyIdentifier):
+	case e.Id.Equal(oidKeyUsage):
+	case e.Id.Equal(authorityKeyIdentifier):
+	case e.Id.Equal(oidExtendedKeyUsage):
 
 	default:
 		slog.Warn("unknown extension", slog.String("id", e.Id.String()))

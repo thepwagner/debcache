@@ -41,5 +41,5 @@ repos:
 
 	upstream, ok := fileCache.Source.(*repo.Upstream)
 	require.True(t, ok)
-	assert.Equal(t, "", upstream.URL.String())
+	assert.Equal(t, "http://deb.debian.org/debian", upstream.URL.String())
 }

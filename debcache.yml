@@ -25,14 +25,9 @@ repos:
       signingKeyPath: "tmp/key.asc"
       github-releases:
         cache:
-          url: file://tmp/github
+          path: ./tmp/github
         token: env.TEST_GITHUB_TOKEN
         repositories:
-          goreleaser/goreleaser:
-            checksums: checksums.txt
-            rekor-signer:
-              github-workflow-ref: "refs/tags/{{VERSION}}"
-              github-workflow-trigger: "push"
           sigstore/cosign:
             rekor-signer:
               issuer: "https://accounts.google.com"

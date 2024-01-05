@@ -86,8 +86,10 @@ func NewGitHubReleasesSource(ctx context.Context, config GitHubReleasesConfig) (
 	var storage cache.Storage
 	if config.Cache.Path == "" {
 		storage = cache.NewLRUStorage(cache.LRUConfig{})
+		slog.Warn("github cache disabled, don't use this in production")
 	} else {
 		storage = cache.NewFileStorage(config.Cache)
+		slog.Debug("github cache set up", slog.String("path", config.Cache.Path))
 	}
 
 	repos := make(map[string]*releaseRepo, len(config.Repositories))
@@ -111,6 +113,7 @@ func NewGitHubReleasesSource(ctx context.Context, config GitHubReleasesConfig) (
 		repos[repoName] = &release
 	}
 
+	slog.Debug("github releases repo", slog.Int("repo_count", len(repos)), slog.Any("arches", arches))
 	return &GitHubReleasesSource{
 		github:        client,
 		repos:         repos,
