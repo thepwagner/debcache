@@ -41,7 +41,7 @@ type GitHubReleasesConfig struct {
 	Repositories  map[string]GitHubReleasesRepoConfig `yaml:"repositories"`
 	Architectures []repo.Architecture                 `yaml:"architectures"`
 	// Cache will be used for storing downloaded assets.
-	Cache cache.Config `yaml:"cache"`
+	Cache cache.FileConfig `yaml:"cache"`
 }
 
 type GitHubReleasesRepoConfig struct {
@@ -83,9 +83,11 @@ func NewGitHubReleasesSource(ctx context.Context, config GitHubReleasesConfig) (
 		arches["Linux-64bit"] = struct{}{}
 	}
 
-	storage, err := cache.StorageFromConfig(config.Cache)
-	if err != nil {
-		return nil, err
+	var storage cache.Storage
+	if config.Cache.Path == "" {
+		storage = cache.NewLRUStorage(cache.LRUConfig{})
+	} else {
+		storage = cache.NewFileStorage(config.Cache)
 	}
 
 	repos := make(map[string]*releaseRepo, len(config.Repositories))
