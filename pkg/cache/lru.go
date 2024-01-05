@@ -15,10 +15,23 @@ type LRUStorage struct {
 	mu   sync.RWMutex
 	data map[Namespace]*expirable.LRU[Key, []byte]
 }
+type LRUConfig struct {
+	// Size is the number of entries to store in the cache
+	Size int
+	TTL  time.Duration `yaml:"ttl"`
+}
 
-func NewLRUStorage(nsSize int, ttl time.Duration) *LRUStorage {
+func NewLRUStorage(cfg LRUConfig) *LRUStorage {
+	size := cfg.Size
+	if size == 0 {
+		size = 100
+	}
+	ttl := cfg.TTL
+	if ttl == 0 {
+		ttl = time.Hour
+	}
 	return &LRUStorage{
-		size:       nsSize,
+		size:       size,
 		defaultTTL: ttl,
 		data:       map[Namespace]*expirable.LRU[Key, []byte]{},
 	}

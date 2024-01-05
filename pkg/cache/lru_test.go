@@ -13,14 +13,14 @@ import (
 func TestLRUStorage(t *testing.T) {
 	t.Parallel()
 	testCache(t, func() cache.Storage {
-		return cache.NewLRUStorage(100, time.Minute)
+		return cache.NewLRUStorage(cache.LRUConfig{TTL: time.Minute})
 	})
 }
 
 func TestLRUStorage_Eviction(t *testing.T) {
 	t.Parallel()
 
-	lru := cache.NewLRUStorage(5, time.Minute)
+	lru := cache.NewLRUStorage(cache.LRUConfig{Size: 5})
 	ctx := context.Background()
 	value := []byte("testValue")
 
@@ -43,7 +43,7 @@ func TestLRUStorage_Eviction(t *testing.T) {
 func TestLRUStorage_Expiry(t *testing.T) {
 	t.Parallel()
 
-	lru := cache.NewLRUStorage(100, 10*time.Millisecond)
+	lru := cache.NewLRUStorage(cache.LRUConfig{TTL: 10 * time.Millisecond})
 	ctx := context.Background()
 	key := cache.Key("testKey")
 	value := []byte("testValue")

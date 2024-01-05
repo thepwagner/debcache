@@ -63,5 +63,5 @@ func TestCached_Pool(t *testing.T) {
 }
 
 func testCacheStorage() cache.Storage {
-	return cache.NewLRUStorage(100, time.Minute)
+	return cache.NewLRUStorage(cache.LRUConfig{Size: 100, TTL: time.Minute})
 }

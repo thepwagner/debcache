@@ -1,5 +1,13 @@
 addr: ":8080"
 
+repos2:
+  debian:
+    type: cached-file
+    path: ./tmp/debian
+    source:
+      type: upstream
+      url: https://deb.debian.org/debian
+
 repos:
   debian:
     upstream:
