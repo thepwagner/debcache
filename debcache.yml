@@ -33,3 +33,8 @@ repos:
               issuer: "https://accounts.google.com"
               subject-alt-name: "keyless@projectsigstore.iam.gserviceaccount.com"
           thepwagner/debcache:
+          goreleaser/goreleaser:
+            checksums: checksums.txt
+            rekor-signer:
+              github-workflow-ref: "refs/tags/{{VERSION}}"
+              github-workflow-trigger: "push"

@@ -140,6 +140,9 @@ func (gh *GitHubReleasesSource) Packages(ctx context.Context) (PackageList, time
 		}
 		for _, release := range releases {
 			slog.Debug("inspecting release", slog.String("tag", release.GetTagName()), slog.Int("asset_count", len(release.Assets)))
+			if release.GetDraft() || release.GetPrerelease() {
+				continue
+			}
 
 			// If we're processing checksums, grab that file first:
 			checksums, digester, err := gh.getCheckSums(ctx, repoName[0], repoName[1], *releaseRepo, release)
