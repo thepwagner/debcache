@@ -56,7 +56,7 @@ func TestCached_Pool(t *testing.T) {
 
 	ctx := context.Background()
 	for i := 0; i < 3; i++ {
-		b, err := cached.Pool(ctx, "component", "pkg", "pkg_1.0_amd64.deb")
+		b, err := cached.Pool(ctx, "component/p/pkg/pkg_1.0_amd64.deb")
 		require.NoError(t, err)
 		require.Equal(t, []byte("1"), b)
 	}
