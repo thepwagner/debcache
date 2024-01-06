@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -82,10 +83,15 @@ func (h Handler) RepoSource(w http.ResponseWriter, r *http.Request) {
 	r.URL.Host = r.Host
 	r.URL.Path = ""
 
+	suites := "bookworm"
+	if strings.Contains(repoName, "-security") {
+		suites = "bookworm-security"
+	}
+
 	repoGraph := debian.Paragraph{
 		"Types":      "deb",
 		"URIs":       r.URL.JoinPath(repoName).String(),
-		"Suites":     "bookworm",
+		"Suites":     suites,
 		"Components": "main",
 		"Signed-By":  string(signedBy),
 	}
@@ -200,7 +206,7 @@ func (h Handler) ByHash(w http.ResponseWriter, r *http.Request) {
 func (h Handler) Pool(w http.ResponseWriter, r *http.Request) {
 	repoName := chi.URLParam(r, "repo")
 	component := repo.Component(chi.URLParam(r, "component"))
-	repo, ok := h.repos[repoName]
+	rep, ok := h.repos[repoName]
 	if !ok {
 		http.NotFound(w, r)
 		return
@@ -208,6 +214,13 @@ func (h Handler) Pool(w http.ResponseWriter, r *http.Request) {
 
 	pkg := chi.URLParam(r, "package")
 	filename := chi.URLParam(r, "*")
+	if len(pkg) == 1 {
+		component = repo.Component(fmt.Sprintf("%s/%s", component, chi.URLParam(r, "p")))
+		split := strings.SplitN(filename, "/", 2)
+		pkg = split[0]
+		filename = split[1]
+	}
+
 	slog.Info("handling Pool",
 		slog.String("request_id", middleware.GetReqID(r.Context())),
 		slog.String("repo", repoName),
@@ -216,7 +229,7 @@ func (h Handler) Pool(w http.ResponseWriter, r *http.Request) {
 		slog.String("filename", filename),
 	)
 
-	b, err := repo.Pool(r.Context(), component, pkg, filename)
+	b, err := rep.Pool(r.Context(), component, pkg, filename)
 	if err != nil {
 		slog.Error("repo.Pool", slog.String("error", err.Error()))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
