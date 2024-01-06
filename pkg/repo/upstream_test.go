@@ -59,17 +59,7 @@ func TestUpstream_Pool(t *testing.T) {
 	srv := countingServer(t, "/pool/component/p/pkg/pkg_1.0_amd64.deb")
 	u := repo.NewUpstream(srv)
 
-	res, err := u.Pool(context.Background(), "component", "pkg", "pkg_1.0_amd64.deb")
-	require.NoError(t, err)
-	require.Equal(t, []byte("1"), res)
-}
-
-func TestUpstream_PoolLib(t *testing.T) {
-	t.Parallel()
-	srv := countingServer(t, "/pool/component/libp/libpkg/libpkg_1.0_amd64.deb")
-	u := repo.NewUpstream(srv)
-
-	res, err := u.Pool(context.Background(), "component", "libpkg", "libpkg_1.0_amd64.deb")
+	res, err := u.Pool(context.Background(), "component/p/pkg/pkg_1.0_amd64.deb")
 	require.NoError(t, err)
 	require.Equal(t, []byte("1"), res)
 }

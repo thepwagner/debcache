@@ -39,7 +39,7 @@ func NewHandler(ctx context.Context, cfg *Config) (*Handler, error) {
 	h.mux.Get("/{repo}/dists/{dist}/{component}/i18n/Translation-{lang:[^.]+}.{compression}", h.Translations)
 	h.mux.Get("/{repo}/dists/{dist}/{component}/i18n/by-hash/{digestAlgo}/{digest}", h.ByHash)
 
-	h.mux.Get("/{repo}/pool/{component}/{p}/{package}/*", h.Pool)
+	h.mux.Get("/{repo}/pool/*", h.Pool)
 
 	for name, cfg := range cfg.Repos {
 		repo, err := BuildRepo(ctx, name, cfg)
@@ -205,31 +205,20 @@ func (h Handler) ByHash(w http.ResponseWriter, r *http.Request) {
 
 func (h Handler) Pool(w http.ResponseWriter, r *http.Request) {
 	repoName := chi.URLParam(r, "repo")
-	component := repo.Component(chi.URLParam(r, "component"))
-	rep, ok := h.repos[repoName]
+	repo, ok := h.repos[repoName]
 	if !ok {
 		http.NotFound(w, r)
 		return
 	}
 
-	pkg := chi.URLParam(r, "package")
 	filename := chi.URLParam(r, "*")
-	if len(pkg) == 1 {
-		component = repo.Component(fmt.Sprintf("%s/%s", component, chi.URLParam(r, "p")))
-		split := strings.SplitN(filename, "/", 2)
-		pkg = split[0]
-		filename = split[1]
-	}
-
 	slog.Info("handling Pool",
 		slog.String("request_id", middleware.GetReqID(r.Context())),
 		slog.String("repo", repoName),
-		slog.Any("component", component),
-		slog.String("package", pkg),
 		slog.String("filename", filename),
 	)
 
-	b, err := rep.Pool(r.Context(), component, pkg, filename)
+	b, err := repo.Pool(r.Context(), filename)
 	if err != nil {
 		slog.Error("repo.Pool", slog.String("error", err.Error()))
 		http.Error(w, err.Error(), http.StatusInternalServerError)

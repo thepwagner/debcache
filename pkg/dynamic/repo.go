@@ -113,7 +113,7 @@ func (r *Repo) ByHash(ctx context.Context, dist repo.Distribution, _ repo.Compon
 	return r.rendered.byHash[digest], nil
 }
 
-func (r *Repo) Pool(_ context.Context, _ repo.Component, _, filename string) ([]byte, error) {
+func (r *Repo) Pool(_ context.Context, filename string) ([]byte, error) {
 	return r.src.Deb(context.Background(), filename)
 }
 

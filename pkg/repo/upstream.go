@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
-	"strings"
 )
 
 // Upstream is a remote repository.
@@ -55,12 +54,8 @@ func (u Upstream) ByHash(ctx context.Context, dist Distribution, component Compo
 	return u.get(ctx, "dists", dist.String(), component.String(), fmt.Sprintf("binary-%s", arch), "by-hash", "SHA256", digest)
 }
 
-func (u Upstream) Pool(ctx context.Context, component Component, pkg, filename string) ([]byte, error) {
-	prefix := string(pkg[0])
-	if strings.HasPrefix(pkg, "lib") {
-		prefix = pkg[:4]
-	}
-	return u.get(ctx, "pool", component.String(), prefix, pkg, filename)
+func (u Upstream) Pool(ctx context.Context, filename string) ([]byte, error) {
+	return u.get(ctx, "pool", filename)
 }
 
 func (u Upstream) get(ctx context.Context, path ...string) ([]byte, error) {

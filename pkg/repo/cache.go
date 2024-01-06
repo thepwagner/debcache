@@ -119,13 +119,11 @@ func (c Cache) ByHash(ctx context.Context, dist Distribution, component Componen
 	return v, nil
 }
 
-func (c Cache) Pool(ctx context.Context, component Component, pkg, filename string) ([]byte, error) {
-	key := pool.Key(component.String(), pkg, filename)
+func (c Cache) Pool(ctx context.Context, filename string) ([]byte, error) {
+	key := pool.Key(filename)
 	v, ok := c.Storage.Get(ctx, key)
 	slog.Debug("cached Pool",
 		slog.String("request_id", middleware.GetReqID(ctx)),
-		slog.Any("component", component),
-		slog.String("pkg", pkg),
 		slog.String("filename", filename),
 		slog.Bool("cache_hit", ok),
 	)
@@ -133,7 +131,7 @@ func (c Cache) Pool(ctx context.Context, component Component, pkg, filename stri
 		return v, nil
 	}
 
-	v, err := c.Source.Pool(ctx, component, pkg, filename)
+	v, err := c.Source.Pool(ctx, filename)
 	if err != nil {
 		return nil, err
 	}

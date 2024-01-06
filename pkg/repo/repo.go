@@ -33,7 +33,7 @@ type Repo interface {
 	ByHash(ctx context.Context, dist Distribution, component Component, arch Architecture, digest string) ([]byte, error)
 
 	// Pool fetches a package from the pool.
-	Pool(ctx context.Context, component Component, pkg, filename string) ([]byte, error)
+	Pool(ctx context.Context, filename string) ([]byte, error)
 
 	// SigningKeyPEM returns the signing key in PEM format.
 	SigningKeyPEM() ([]byte, error)
