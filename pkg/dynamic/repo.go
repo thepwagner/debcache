@@ -113,8 +113,8 @@ func (r *Repo) ByHash(ctx context.Context, dist repo.Distribution, _ repo.Compon
 	return r.rendered.byHash[digest], nil
 }
 
-func (r *Repo) Pool(_ context.Context, filename string) ([]byte, error) {
-	return r.src.Deb(context.Background(), filename)
+func (r *Repo) Pool(ctx context.Context, filename string) ([]byte, error) {
+	return r.src.Deb(ctx, filename)
 }
 
 func (r *Repo) SigningKeyPEM() ([]byte, error) {
@@ -211,7 +211,7 @@ func (r *Repo) renderPackages(pkgs PackageList, pkgTime time.Time, dist repo.Dis
 			renderedComponent[arch] = pkgRaw.Bytes()
 
 			for _, compressor := range compressors {
-				compressed, err := compressor.Compress(pkgRaw.Bytes()) // compressed, err? what is the PSI?
+				compressed, err := compressor.Compress(pkgRaw.Bytes()) // compressed, err - sounds like inflation to me
 				if err != nil {
 					return nil, err
 				}

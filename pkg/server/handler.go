@@ -83,15 +83,15 @@ func (h Handler) RepoSource(w http.ResponseWriter, r *http.Request) {
 	r.URL.Host = r.Host
 	r.URL.Path = ""
 
-	suites := "bookworm"
+	suite := "bookworm"
 	if strings.Contains(repoName, "-security") {
-		suites = "bookworm-security"
+		suite = "bookworm-security"
 	}
 
 	repoGraph := debian.Paragraph{
 		"Types":      "deb",
 		"URIs":       r.URL.JoinPath(repoName).String(),
-		"Suites":     suites,
+		"Suite":      suite,
 		"Components": "main",
 		"Signed-By":  string(signedBy),
 	}
