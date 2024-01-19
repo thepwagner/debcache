@@ -9,7 +9,7 @@ require (
 	github.com/go-openapi/runtime v0.26.2
 	github.com/google/go-github/v58 v58.0.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/lmittmann/tint v1.0.3
+	github.com/lmittmann/tint v1.0.4
 	github.com/sigstore/cosign/v2 v2.2.2
 	github.com/sigstore/fulcio v1.4.3
 	github.com/sigstore/rekor v1.3.4
