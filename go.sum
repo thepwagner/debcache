@@ -234,6 +234,8 @@ github.com/go-openapi/spec v0.20.12 h1:cgSLbrsmziAP2iais+Vz7kSazwZ8rsUZd6TUzdDgk
 github.com/go-openapi/spec v0.20.12/go.mod h1:iSCgnBcwbMW9SfzJb8iYynXvcY6C/QFrI7otzF7xGM4=
 github.com/go-openapi/spec v0.20.13 h1:XJDIN+dLH6vqXgafnl5SUIMnzaChQ6QTo0/UPMbkIaE=
 github.com/go-openapi/spec v0.20.13/go.mod h1:8EOhTpBoFiask8rrgwbLC3zmJfz4zsCUueRuPM6GNkw=
+github.com/go-openapi/spec v0.20.14 h1:7CBlRnw+mtjFGlPDRZmAMnq35cRzI91xj03HVyUi/Do=
+github.com/go-openapi/spec v0.20.14/go.mod h1:8EOhTpBoFiask8rrgwbLC3zmJfz4zsCUueRuPM6GNkw=
 github.com/go-openapi/strfmt v0.21.3/go.mod h1:k+RzNO0Da+k3FrrynSNN8F7n/peCmQQqbbXjtDfvmGg=
 github.com/go-openapi/strfmt v0.21.8 h1:VYBUoKYRLAlgKDrIxR/I0lKrztDQ0tuTDrbhLVP8Erg=
 github.com/go-openapi/strfmt v0.21.8/go.mod h1:adeGTkxE44sPyLk0JV235VQAO/ZXUr8KAzYjclFs3ew=
@@ -255,6 +257,8 @@ github.com/go-openapi/validate v0.22.3 h1:KxG9mu5HBRYbecRb37KRCihvGGtND2aXziBAv0
 github.com/go-openapi/validate v0.22.3/go.mod h1:kVxh31KbfsxU8ZyoHaDbLBWU5CnMdqBUEtadQ2G4d5M=
 github.com/go-openapi/validate v0.22.4 h1:5v3jmMyIPKTR8Lv9syBAIRxG6lY0RqeBPB1LKEijzk8=
 github.com/go-openapi/validate v0.22.4/go.mod h1:qm6O8ZIcPVdSY5219468Jv7kBdGvkiZLPOmqnqTUZ2A=
+github.com/go-openapi/validate v0.22.6 h1:+NhuwcEYpWdO5Nm4bmvhGLW0rt1Fcc532Mu3wpypXfo=
+github.com/go-openapi/validate v0.22.6/go.mod h1:eaddXSqKeTg5XpSmj1dYyFTK/95n/XHwcOY+BMxKMyM=
 github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0/go.mod h1:fyg7847qk6SyHyPtNmDHnmrv/HOrqktSC+C9fM+CJOE=
 github.com/go-test/deep v1.1.0 h1:WOcxcdHcvdgThNXjw0t76K42FXTU7HpNQWHpA2HHNlg=
 github.com/go-test/deep v1.1.0/go.mod h1:5C2ZWiW0ErCdrYzpqxLbTX7MG14M9iiw8DgHncVwcsE=
@@ -518,6 +522,8 @@ github.com/sigstore/fulcio v1.4.3 h1:9JcUCZjjVhRF9fmhVuz6i1RyhCc/EGCD7MOl+iqCJLQ
 github.com/sigstore/fulcio v1.4.3/go.mod h1:BQPWo7cfxmJwgaHlphUHUpFkp5+YxeJes82oo39m5og=
 github.com/sigstore/rekor v1.3.4 h1:RGIia1iOZU7fOiiP2UY/WFYhhp50S5aUm7YrM8aiA6E=
 github.com/sigstore/rekor v1.3.4/go.mod h1:1GubPVO2yO+K0m0wt/3SHFqnilr/hWbsjSOe7Vzxrlg=
+github.com/sigstore/rekor v1.3.5 h1:QoVXcS7NppKY+rpbEFVHr4evGDZBBSh65X0g8PXoUkQ=
+github.com/sigstore/rekor v1.3.5/go.mod h1:CWqOk/fmnPwORQmm7SyDgB54GTJizqobbZ7yOP1lvw8=
 github.com/sigstore/sigstore v1.8.0 h1:sSRWXv1JiDsK4T2wNWVYcvKCgxcSrhQ/QUJxsfCO4OM=
 github.com/sigstore/sigstore v1.8.0/go.mod h1:l12B1gFlLIpBIVeqk/q1Lb+6YSOGNuN3xLExIjYH+qc=
 github.com/sigstore/sigstore v1.8.1 h1:mAVposMb14oplk2h/bayPmIVdzbq2IhCgy4g6R0ZSjo=
@@ -1024,6 +1030,8 @@ honnef.co/go/tools v0.0.1-2020.1.3/go.mod h1:X/FiERA/W4tHapMX5mGpAtMSVEeEUOyHaw9
 honnef.co/go/tools v0.0.1-2020.1.4/go.mod h1:X/FiERA/W4tHapMX5mGpAtMSVEeEUOyHaw9vFzvIQ3k=
 k8s.io/klog/v2 v2.100.1 h1:7WCHKK6K8fNhTqfBhISHQ97KrnJNFZMcQvKp7gP/tmg=
 k8s.io/klog/v2 v2.100.1/go.mod h1:y1WjHnz7Dj687irZUWR/WLkLc5N1YHtjLdmgWjndZn0=
+k8s.io/klog/v2 v2.120.0 h1:z+q5mfovBj1fKFxiRzsa2DsJLPIVMk/KFL81LMOfK+8=
+k8s.io/klog/v2 v2.120.0/go.mod h1:3Jpz1GvMt720eyJH1ckRHK1EDfpxISzJ7I9OYgaDtPE=
 rsc.io/binaryregexp v0.2.0/go.mod h1:qTv7/COck+e2FymRvadv62gMdZztPaShugOCi3I+8D8=
 rsc.io/quote/v3 v3.1.0/go.mod h1:yEA65RcK8LyAZtP9Kv3t0HmxON59tX3rD+tICJqUlj0=
 rsc.io/sampler v1.3.0/go.mod h1:T1hPZKmBbMNahiBKFy5HrXp6adAjACjK9JXDnKaTXpA=

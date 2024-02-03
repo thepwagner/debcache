@@ -12,7 +12,7 @@ require (
 	github.com/lmittmann/tint v1.0.4
 	github.com/sigstore/cosign/v2 v2.2.3
 	github.com/sigstore/fulcio v1.4.3
-	github.com/sigstore/rekor v1.3.4
+	github.com/sigstore/rekor v1.3.5
 	github.com/sigstore/sigstore v1.8.1
 	github.com/stretchr/testify v1.8.4
 	github.com/ulikunitz/xz v0.5.11
@@ -42,10 +42,10 @@ require (
 	github.com/go-openapi/jsonpointer v0.20.2 // indirect
 	github.com/go-openapi/jsonreference v0.20.4 // indirect
 	github.com/go-openapi/loads v0.21.5 // indirect
-	github.com/go-openapi/spec v0.20.13 // indirect
+	github.com/go-openapi/spec v0.20.14 // indirect
 	github.com/go-openapi/strfmt v0.22.0 // indirect
 	github.com/go-openapi/swag v0.22.9 // indirect
-	github.com/go-openapi/validate v0.22.4 // indirect
+	github.com/go-openapi/validate v0.22.6 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/certificate-transparency-go v1.1.7 // indirect
 	github.com/google/go-containerregistry v0.18.0 // indirect
@@ -107,5 +107,5 @@ require (
 	gopkg.in/go-jose/go-jose.v2 v2.6.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gotest.tools/v3 v3.1.0 // indirect
-	k8s.io/klog/v2 v2.100.1 // indirect
+	k8s.io/klog/v2 v2.120.0 // indirect
 )
