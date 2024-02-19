@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v58/github"
+	"github.com/google/go-github/v59/github"
 	"github.com/thepwagner/debcache/pkg/cache"
 	"github.com/thepwagner/debcache/pkg/debian"
 	"github.com/thepwagner/debcache/pkg/repo"
