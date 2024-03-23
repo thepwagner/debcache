@@ -31,15 +31,23 @@ repos:
           - arm64
           - amd64
         repositories:
-          sigstore/cosign:
+          cli/cli: # github CLI
+            checksums: gh_{{VERSION_WITHOUT_V}}_checksums.txt
+          getsops/sops:
             rekor-signer:
-              issuer: "https://accounts.google.com"
-              subject-alt-name: "keyless@projectsigstore.iam.gserviceaccount.com"
-          thepwagner/debcache:
+              github-workflow-ref: "refs/tags/{{VERSION}}"
+              github-workflow-trigger: "push"
           goreleaser/goreleaser:
             checksums: checksums.txt
             rekor-signer:
               github-workflow-ref: "refs/tags/{{VERSION}}"
               github-workflow-trigger: "push"
-          cli/cli: # github CLI
-            checksums: gh_{{VERSION_WITHOUT_V}}_checksums.txt
+          sigstore/cosign:
+            rekor-signer:
+              issuer: "https://accounts.google.com"
+              subject-alt-name: "keyless@projectsigstore.iam.gserviceaccount.com"
+          thepwagner/debcache:
+          thepwagner-org/debian-golang:
+            rekor-signer:
+              github-workflow-ref: "refs/tags/{{VERSION}}"
+              github-workflow-trigger: "push"
