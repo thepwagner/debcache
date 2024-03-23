@@ -91,7 +91,7 @@ func (h Handler) RepoSource(w http.ResponseWriter, r *http.Request) {
 	repoGraph := debian.Paragraph{
 		"Types":      "deb",
 		"URIs":       r.URL.JoinPath(repoName).String(),
-		"Suite":      suite,
+		"Suites":     suite,
 		"Components": "main",
 		"Signed-By":  string(signedBy),
 	}
