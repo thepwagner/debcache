@@ -27,14 +27,27 @@ repos:
         cache:
           path: ./tmp/github
         token: env.TEST_GITHUB_TOKEN
+        architectures:
+          - arm64
+          - amd64
         repositories:
+          cli/cli: # github CLI
+            checksums: gh_{{VERSION_WITHOUT_V}}_checksums.txt
+          getsops/sops:
+            rekor-signer:
+              github-workflow-ref: "refs/tags/{{VERSION}}"
+              github-workflow-trigger: "push"
+          goreleaser/goreleaser:
+            checksums: checksums.txt
+            rekor-signer:
+              github-workflow-ref: "refs/tags/{{VERSION}}"
+              github-workflow-trigger: "push"
           sigstore/cosign:
             rekor-signer:
               issuer: "https://accounts.google.com"
               subject-alt-name: "keyless@projectsigstore.iam.gserviceaccount.com"
           thepwagner/debcache:
-          goreleaser/goreleaser:
-            checksums: checksums.txt
+          thepwagner-org/debian-golang:
             rekor-signer:
               github-workflow-ref: "refs/tags/{{VERSION}}"
               github-workflow-trigger: "push"

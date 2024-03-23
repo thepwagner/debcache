@@ -237,8 +237,10 @@ func (gh *GitHubReleasesSource) Packages(ctx context.Context) (PackageList, time
 }
 
 func (gh *GitHubReleasesSource) Deb(ctx context.Context, filename string) ([]byte, error) {
-	key := assets.Key(filename)
-	if b, ok := gh.cache.Get(ctx, key); ok {
+	key := assets.Key(filepath.Base(filename))
+	b, ok := gh.cache.Get(ctx, key)
+	slog.Debug("github serving deb", slog.Bool("ok", ok), slog.Any("cache_key", key))
+	if ok {
 		return b, nil
 	}
 	return nil, nil
@@ -262,6 +264,7 @@ func (gh *GitHubReleasesSource) get(ctx context.Context, owner, repo string, ass
 	}
 	slog.Debug("fetched asset", slog.String("repo_owner", owner), slog.String("repo_name", repo), slog.Int64("asset_id", assetID), slog.Int("bytes", len(b)))
 
+	slog.Debug("github adding deb to cache", slog.Any("cache_key", key))
 	gh.cache.Add(ctx, key, b)
 	return b, nil
 }
