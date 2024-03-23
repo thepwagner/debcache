@@ -27,6 +27,9 @@ repos:
         cache:
           path: ./tmp/github
         token: env.TEST_GITHUB_TOKEN
+        architectures:
+          - arm64
+          - amd64
         repositories:
           sigstore/cosign:
             rekor-signer:
@@ -38,3 +41,5 @@ repos:
             rekor-signer:
               github-workflow-ref: "refs/tags/{{VERSION}}"
               github-workflow-trigger: "push"
+          cli/cli: # github CLI
+            checksums: gh_{{VERSION_WITHOUT_V}}_checksums.txt
