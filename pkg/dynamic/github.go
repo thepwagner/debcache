@@ -237,7 +237,8 @@ func (gh *GitHubReleasesSource) Packages(ctx context.Context) (PackageList, time
 }
 
 func (gh *GitHubReleasesSource) Deb(ctx context.Context, filename string) ([]byte, error) {
-	key := assets.Key(filepath.Base(filename))
+	filename = strings.TrimPrefix(filename, "main/p/pkg/")
+	key := assets.Key(filename)
 	b, ok := gh.cache.Get(ctx, key)
 	slog.Debug("github serving deb", slog.Bool("ok", ok), slog.Any("cache_key", key))
 	if ok {
