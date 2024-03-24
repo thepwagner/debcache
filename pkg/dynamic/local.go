@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/thepwagner/debcache/pkg/debian"
@@ -70,6 +71,7 @@ func (s LocalSource) Packages(_ context.Context) (PackageList, time.Time, error)
 }
 
 func (s LocalSource) Deb(_ context.Context, filename string) ([]byte, error) {
+	filename = strings.TrimPrefix(filename, "main/p/pkg/")
 	return os.ReadFile(filepath.Join(s.dir, filename))
 }
 
