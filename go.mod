@@ -15,7 +15,7 @@ require (
 	github.com/sigstore/rekor v1.3.6
 	github.com/sigstore/sigstore v1.8.3
 	github.com/stretchr/testify v1.9.0
-	github.com/ulikunitz/xz v0.5.11
+	github.com/ulikunitz/xz v0.5.12
 	golang.org/x/net v0.22.0
 	gopkg.in/yaml.v3 v3.0.1
 )
