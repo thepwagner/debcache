@@ -10,3 +10,4 @@ go.work
 /dist/
 /tmp/
 .envrc
+/.vscode/

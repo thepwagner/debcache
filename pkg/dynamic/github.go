@@ -100,7 +100,14 @@ func NewGitHubReleasesSource(ctx context.Context, config GitHubReleasesConfig) (
 			ChecksumFile: repoConfig.ChecksumFile,
 		}
 		if repoConfig.Signer != nil {
-			verifier, err := signature.NewRekorVerifier(ctx, *repoConfig.Signer)
+			id := *repoConfig.Signer
+			if id.Issuer == "" {
+				id.Issuer = "https://token.actions.githubusercontent.com"
+			}
+			if id.Issuer == "https://token.actions.githubusercontent.com" && id.GitHubWorkflowRepository == "" {
+				id.GitHubWorkflowRepository = repoName
+			}
+			verifier, err := signature.NewRekorVerifier(ctx, id)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create rekor verifier: %w", err)
 			}
