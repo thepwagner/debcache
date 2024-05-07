@@ -29,18 +29,22 @@ func TestGitHubReleasesSource(t *testing.T) {
 		"no verification": {},
 		"deb verification": {
 			config: dynamic.GitHubReleasesRepoConfig{
-				Signer: &signature.FulcioIdentity{
-					Issuer:         "https://accounts.google.com",
-					SubjectAltName: "keyless@projectsigstore.iam.gserviceaccount.com",
+				Provenance: dynamic.GitHubProvenanceConfig{
+					Signer: &signature.FulcioIdentity{
+						Issuer:         "https://accounts.google.com",
+						SubjectAltName: "keyless@projectsigstore.iam.gserviceaccount.com",
+					},
 				},
 			},
 		},
 		"checksum verification": {
 			config: dynamic.GitHubReleasesRepoConfig{
 				ChecksumFile: "cosign_checksums.txt",
-				Signer: &signature.FulcioIdentity{
-					Issuer:         "https://accounts.google.com",
-					SubjectAltName: "keyless@projectsigstore.iam.gserviceaccount.com",
+				Provenance: dynamic.GitHubProvenanceConfig{
+					Signer: &signature.FulcioIdentity{
+						Issuer:         "https://accounts.google.com",
+						SubjectAltName: "keyless@projectsigstore.iam.gserviceaccount.com",
+					},
 				},
 			},
 		},

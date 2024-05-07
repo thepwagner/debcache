@@ -45,8 +45,13 @@ type GitHubReleasesConfig struct {
 }
 
 type GitHubReleasesRepoConfig struct {
-	Signer       *signature.FulcioIdentity `yaml:"rekor-signer"`
-	ChecksumFile string                    `yaml:"checksums"`
+	Provenance   GitHubProvenanceConfig `yaml:"provenance"`
+	ChecksumFile string                 `yaml:"checksums"`
+}
+
+type GitHubProvenanceConfig struct {
+	Source string                    `yaml:"source"`
+	Signer *signature.FulcioIdentity `yaml:"signer"`
 }
 
 type releaseRepo struct {
@@ -99,14 +104,17 @@ func NewGitHubReleasesSource(ctx context.Context, config GitHubReleasesConfig) (
 		release := releaseRepo{
 			ChecksumFile: repoConfig.ChecksumFile,
 		}
-		if repoConfig.Signer != nil {
-			id := *repoConfig.Signer
+		if repoConfig.Provenance.Signer != nil {
+			id := *repoConfig.Provenance.Signer
 			if id.Issuer == "" {
 				id.Issuer = "https://token.actions.githubusercontent.com"
 			}
 			if id.Issuer == "https://token.actions.githubusercontent.com" && id.GitHubWorkflowRepository == "" {
 				id.GitHubWorkflowRepository = repoName
 			}
+
+			// TODO: switch on `source` goes here.
+
 			verifier, err := signature.NewRekorVerifier(ctx, id)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create rekor verifier: %w", err)

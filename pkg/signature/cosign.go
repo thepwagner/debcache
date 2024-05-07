@@ -5,13 +5,10 @@ import (
 	"context"
 	"crypto/sha256"
 	"crypto/x509"
-	"crypto/x509/pkix"
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
 	"log/slog"
-	"regexp"
-	"strings"
 
 	"github.com/go-openapi/runtime"
 	"github.com/sigstore/cosign/v2/pkg/cosign"
@@ -26,9 +23,7 @@ import (
 type RekorVerifier struct {
 	client *client.Rekor
 	pubs   *cosign.TrustedTransparencyLogPubKeys
-
-	values  map[string]string
-	regexps map[string]*regexp.Regexp
+	id     *idVerifier
 }
 
 var _ Verifier = (*RekorVerifier)(nil)
@@ -42,15 +37,14 @@ func NewRekorVerifier(ctx context.Context, identity FulcioIdentity) (*RekorVerif
 	if err != nil {
 		return nil, err
 	}
-	regexps, err := identity.regexps()
+	id, err := newIdVerifier(identity)
 	if err != nil {
 		return nil, err
 	}
 	return &RekorVerifier{
-		client:  client,
-		pubs:    pubs,
-		values:  identity.values(),
-		regexps: regexps,
+		client: client,
+		pubs:   pubs,
+		id:     id,
 	}, nil
 }
 
@@ -143,47 +137,9 @@ func (v RekorVerifier) verifyEntry(ctx context.Context, version string, entryUUI
 			return false, fmt.Errorf("parsing public key: %w", err)
 		}
 
-		if ok, err := v.verifyExtensions(version, cert.Extensions); err != nil {
+		if ok, err := v.id.verifyExtensions(version, cert.Extensions); err != nil {
 			return false, fmt.Errorf("parsing extensions: %w", err)
 		} else if ok {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
-func (v RekorVerifier) verifyExtensions(version string, ext []pkix.Extension) (bool, error) {
-	vCount := len(v.values)
-	reCount := len(v.regexps)
-	slog.Debug("verifying extensions", slog.Int("needed_values", vCount), slog.Int("needed_regexps", reCount), slog.Int("extension_count", len(ext)))
-	for _, e := range ext {
-		actual, err := decodeExtension(e)
-		if err != nil {
-			return false, err
-		} else if actual == "" {
-			continue
-		}
-		extID := e.Id.String()
-		log := slog.With(slog.String("id", extID), slog.String("actual", actual))
-		if expected, ok := v.values[extID]; ok {
-			if actual != strings.ReplaceAll(expected, "{{VERSION}}", version) {
-				log.Debug("extension value mismatch", slog.String("expected", expected))
-				return false, nil
-			}
-			log.Debug("extension value match", slog.String("expected", expected))
-			vCount--
-		}
-
-		if re, ok := v.regexps[extID]; ok {
-			if !re.MatchString(actual) {
-				log.Debug("extension regexp mismatch", slog.String("expected", re.String()))
-				return false, nil
-			}
-			log.Debug("extension regexp match", slog.String("expected", re.String()))
-			reCount--
-		}
-
-		if vCount == 0 && reCount == 0 {
 			return true, nil
 		}
 	}
