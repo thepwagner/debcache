@@ -55,3 +55,9 @@ repos:
               signer:
                 github-workflow-ref: "refs/tags/{{VERSION}}"
                 github-workflow-trigger: "push"
+          thepwagner/ghcr-reaper:
+            provenance:
+              source: github
+              signer:
+                github-workflow-ref: "refs/tags/{{VERSION}}"
+                github-workflow-trigger: "push"
