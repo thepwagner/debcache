@@ -113,14 +113,21 @@ func NewGitHubReleasesSource(ctx context.Context, config GitHubReleasesConfig) (
 				id.GitHubWorkflowRepository = repoName
 			}
 
-			// TODO: switch on `source` goes here.
-
-			verifier, err := signature.NewRekorVerifier(ctx, id)
-			if err != nil {
-				return nil, fmt.Errorf("failed to create rekor verifier: %w", err)
+			if strings.ToLower(repoConfig.Provenance.Source) == "github" {
+				verifier, err := signature.NewGitHubVerifier(client, repoName, id)
+				if err != nil {
+					return nil, fmt.Errorf("failed to create github verifier: %w", err)
+				}
+				log.Debug("using github verifier")
+				release.verifier = verifier
+			} else {
+				verifier, err := signature.NewRekorVerifier(ctx, id)
+				if err != nil {
+					return nil, fmt.Errorf("failed to create rekor verifier: %w", err)
+				}
+				log.Debug("using rekor verifier")
+				release.verifier = verifier
 			}
-			log.Debug("using rekor verifier")
-			release.verifier = verifier
 		} else {
 			log.Debug("verification disabled")
 			release.verifier = signature.AlwaysPass()

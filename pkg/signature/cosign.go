@@ -37,7 +37,7 @@ func NewRekorVerifier(ctx context.Context, identity FulcioIdentity) (*RekorVerif
 	if err != nil {
 		return nil, err
 	}
-	id, err := newIdVerifier(identity)
+	id, err := newIDVerifier(identity)
 	if err != nil {
 		return nil, err
 	}

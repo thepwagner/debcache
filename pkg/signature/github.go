@@ -26,7 +26,7 @@ func NewGitHubVerifier(gh *github.Client, repo string, identity FulcioIdentity) 
 	if err != nil {
 		return nil, err
 	}
-	id, err := newIdVerifier(identity)
+	id, err := newIDVerifier(identity)
 	if err != nil {
 		return nil, err
 	}
@@ -98,16 +98,16 @@ type AttestationReply struct {
 func newPublicGoodVerifier() (*verify.SignedEntityVerifier, error) {
 	client, err := tuf.New(tuf.DefaultOptions())
 	if err != nil {
-		return nil, fmt.Errorf("failed to create TUF client: %v", err)
+		return nil, fmt.Errorf("failed to create TUF client: %w", err)
 	}
 	trustedRoot, err := root.GetTrustedRoot(client)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get trusted root: %v", err)
+		return nil, fmt.Errorf("failed to get trusted root: %w", err)
 	}
 
 	sv, err := verify.NewSignedEntityVerifier(trustedRoot, verify.WithSignedCertificateTimestamps(1), verify.WithTransparencyLog(1), verify.WithObserverTimestamps(1))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Public Good verifier: %v", err)
+		return nil, fmt.Errorf("failed to create Public Good verifier: %w", err)
 	}
 
 	return sv, nil

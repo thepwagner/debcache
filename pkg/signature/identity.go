@@ -12,7 +12,7 @@ type idVerifier struct {
 	regexps map[string]*regexp.Regexp
 }
 
-func newIdVerifier(identity FulcioIdentity) (*idVerifier, error) {
+func newIDVerifier(identity FulcioIdentity) (*idVerifier, error) {
 	regexps, err := identity.regexps()
 	if err != nil {
 		return nil, err
