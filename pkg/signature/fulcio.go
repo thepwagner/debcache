@@ -13,6 +13,7 @@ import (
 
 // FulcioIdentity identifies a Fulcio certificate.
 type FulcioIdentity struct {
+	// Issuer is the issuer of the certificate. Defaults to "https://token.actions.githubusercontent.com".
 	Issuer         string `yaml:"issuer"`
 	SubjectAltName string `yaml:"subject-alt-name"`
 
@@ -20,7 +21,7 @@ type FulcioIdentity struct {
 	GitHubWorkflowTrigger    string `yaml:"github-workflow-trigger"`
 	GitHubWorkflowSha        string `yaml:"github-workflow-sha"`
 	GitHubWorkflowName       string `yaml:"github-workflow-name"`
-	GithubWorkflowRepository string `yaml:"github-workflow-repository"`
+	GitHubWorkflowRepository string `yaml:"github-workflow-repository"`
 	GitHubWorkflowRef        string `yaml:"github-workflow-ref"`
 
 	BuildSignerURI                      string `yaml:"build-signer-uri"`
@@ -61,8 +62,8 @@ func (i FulcioIdentity) values() map[string]string {
 	if i.GitHubWorkflowName != "" {
 		ret[certificate.OIDGitHubWorkflowName.String()] = i.GitHubWorkflowName //nolint:staticcheck
 	}
-	if i.GithubWorkflowRepository != "" {
-		ret[certificate.OIDGitHubWorkflowRepository.String()] = i.GithubWorkflowRepository //nolint:staticcheck
+	if i.GitHubWorkflowRepository != "" {
+		ret[certificate.OIDGitHubWorkflowRepository.String()] = i.GitHubWorkflowRepository //nolint:staticcheck
 	}
 	if i.GitHubWorkflowRef != "" {
 		ret[certificate.OIDGitHubWorkflowRef.String()] = i.GitHubWorkflowRef //nolint:staticcheck

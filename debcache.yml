@@ -34,20 +34,30 @@ repos:
           cli/cli: # github CLI
             checksums: gh_{{VERSION_WITHOUT_V}}_checksums.txt
           getsops/sops:
-            rekor-signer:
-              github-workflow-ref: "refs/tags/{{VERSION}}"
-              github-workflow-trigger: "push"
+            provenance:
+              signer:
+                github-workflow-ref: "refs/tags/{{VERSION}}"
+                github-workflow-trigger: "push"
           goreleaser/goreleaser:
             checksums: checksums.txt
-            rekor-signer:
-              github-workflow-ref: "refs/tags/{{VERSION}}"
-              github-workflow-trigger: "push"
+            provenance:
+              signer:
+                github-workflow-ref: "refs/tags/{{VERSION}}"
+                github-workflow-trigger: "push"
           sigstore/cosign:
-            rekor-signer:
-              issuer: "https://accounts.google.com"
-              subject-alt-name: "keyless@projectsigstore.iam.gserviceaccount.com"
+            provenance:
+              signer:
+                issuer: "https://accounts.google.com"
+                subject-alt-name: "keyless@projectsigstore.iam.gserviceaccount.com"
           thepwagner/debcache:
           thepwagner-org/debian-golang:
-            rekor-signer:
-              github-workflow-ref: "refs/tags/{{VERSION}}"
-              github-workflow-trigger: "push"
+            provenance:
+              signer:
+                github-workflow-ref: "refs/tags/{{VERSION}}"
+                github-workflow-trigger: "push"
+          thepwagner/ghcr-reaper:
+            provenance:
+              source: github
+              signer:
+                github-workflow-ref: "refs/tags/{{VERSION}}"
+                github-workflow-trigger: "push"

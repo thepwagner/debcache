@@ -45,8 +45,13 @@ type GitHubReleasesConfig struct {
 }
 
 type GitHubReleasesRepoConfig struct {
-	Signer       *signature.FulcioIdentity `yaml:"rekor-signer"`
-	ChecksumFile string                    `yaml:"checksums"`
+	Provenance   GitHubProvenanceConfig `yaml:"provenance"`
+	ChecksumFile string                 `yaml:"checksums"`
+}
+
+type GitHubProvenanceConfig struct {
+	Source string                    `yaml:"source"`
+	Signer *signature.FulcioIdentity `yaml:"signer"`
 }
 
 type releaseRepo struct {
@@ -99,13 +104,30 @@ func NewGitHubReleasesSource(ctx context.Context, config GitHubReleasesConfig) (
 		release := releaseRepo{
 			ChecksumFile: repoConfig.ChecksumFile,
 		}
-		if repoConfig.Signer != nil {
-			verifier, err := signature.NewRekorVerifier(ctx, *repoConfig.Signer)
-			if err != nil {
-				return nil, fmt.Errorf("failed to create rekor verifier: %w", err)
+		if repoConfig.Provenance.Signer != nil {
+			id := *repoConfig.Provenance.Signer
+			if id.Issuer == "" {
+				id.Issuer = "https://token.actions.githubusercontent.com"
 			}
-			log.Debug("using rekor verifier")
-			release.verifier = verifier
+			if id.Issuer == "https://token.actions.githubusercontent.com" && id.GitHubWorkflowRepository == "" {
+				id.GitHubWorkflowRepository = repoName
+			}
+
+			if strings.ToLower(repoConfig.Provenance.Source) == "github" {
+				verifier, err := signature.NewGitHubVerifier(client, repoName, id)
+				if err != nil {
+					return nil, fmt.Errorf("failed to create github verifier: %w", err)
+				}
+				log.Debug("using github verifier")
+				release.verifier = verifier
+			} else {
+				verifier, err := signature.NewRekorVerifier(ctx, id)
+				if err != nil {
+					return nil, fmt.Errorf("failed to create rekor verifier: %w", err)
+				}
+				log.Debug("using rekor verifier")
+				release.verifier = verifier
+			}
 		} else {
 			log.Debug("verification disabled")
 			release.verifier = signature.AlwaysPass()
