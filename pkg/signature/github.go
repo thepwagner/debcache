@@ -16,7 +16,7 @@ import (
 
 type GitHubVerifier struct {
 	gh       *github.Client
-	id       *idVerifier
+	id       *CertificateVerifier
 	verifier *verify.SignedEntityVerifier
 	nwo      string
 }
@@ -26,7 +26,7 @@ func NewGitHubVerifier(gh *github.Client, repo string, identity FulcioIdentity) 
 	if err != nil {
 		return nil, err
 	}
-	id, err := newIDVerifier(identity)
+	id, err := NewCertificateVerifier(identity)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (gh *GitHubVerifier) Verify(ctx context.Context, version string, deb []byte
 		if err != nil {
 			return false, fmt.Errorf("parsing public key: %w", err)
 		}
-		if ok, err := gh.id.verifyExtensions(version, cert.Extensions); err != nil {
+		if ok, err := gh.id.Verify(version, cert); err != nil {
 			return false, fmt.Errorf("verifying extensions: %w", err)
 		} else if !ok {
 			continue
