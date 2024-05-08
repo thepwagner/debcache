@@ -3,21 +3,13 @@ package signature_test
 import (
 	"context"
 	"io"
-	"log/slog"
 	"net/http"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/thepwagner/debcache/pkg/signature"
 )
-
-func init() {
-	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
-	})))
-}
 
 func TestRekorVerifier(t *testing.T) {
 	t.Parallel()

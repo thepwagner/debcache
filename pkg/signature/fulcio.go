@@ -39,7 +39,29 @@ type FulcioIdentity struct {
 	RunInvocationURI                    string `yaml:"run-invocation-uri"`
 	SourceRepositoryVisibilityAtSigning string `yaml:"source-repository-visibility-at-signing"`
 
-	BuildTriggerPattern string `yaml:"build-trigger-pattern"`
+	IssuerPattern         string `yaml:"issuer-pattern"`
+	SubjectAltNamePattern string `yaml:"subject-alt-name-pattern"`
+
+	GitHubWorkflowTriggerPattern    string `yaml:"github-workflow-trigger-pattern"`
+	GitHubWorkflowShaPattern        string `yaml:"github-workflow-sha-pattern"`
+	GitHubWorkflowNamePattern       string `yaml:"github-workflow-name-pattern"`
+	GitHubWorkflowRepositoryPattern string `yaml:"github-workflow-repository-pattern"`
+	GitHubWorkflowRefPattern        string `yaml:"github-workflow-ref-pattern"`
+
+	BuildSignerURIPattern                      string `yaml:"build-signer-uri-pattern"`
+	BuildSignerDigestPattern                   string `yaml:"build-signer-digest-pattern"`
+	RunnerEnvironmentPattern                   string `yaml:"runner-environment-pattern"`
+	SourceRepositoryURIPattern                 string `yaml:"source-repository-uri-pattern"`
+	SourceRepositoryDigestPattern              string `yaml:"source-repository-digest-pattern"`
+	SourceRepositoryRefPattern                 string `yaml:"source-repository-ref-pattern"`
+	SourceRepositoryIdentifierPattern          string `yaml:"source-repository-identifier-pattern"`
+	SourceRepositoryOwnerURIPattern            string `yaml:"source-repository-owner-uri-pattern"`
+	SourceRepositoryOwnerIdentifierPattern     string `yaml:"source-repository-owner-identifier-pattern"`
+	BuildConfigURIPattern                      string `yaml:"build-config-uri-pattern"`
+	BuildConfigDigestPattern                   string `yaml:"build-config-digest-pattern"`
+	BuildTriggerPattern                        string `yaml:"build-trigger-pattern"`
+	RunInvocationURIPattern                    string `yaml:"run-invocation-uri-pattern"`
+	SourceRepositoryVisibilityAtSigningPattern string `yaml:"source-repository-visibility-at-signing-pattern"`
 }
 
 func (i FulcioIdentity) values() map[string]string {
@@ -114,25 +136,45 @@ func (i FulcioIdentity) values() map[string]string {
 
 	return ret
 }
+
+//nolint:staticcheck
 func (i FulcioIdentity) regexps() (map[string]*regexp.Regexp, error) {
 	ret := map[string]*regexp.Regexp{}
 
-	add := func(pattern string, oid asn1.ObjectIdentifier) error {
+	for oid, pattern := range map[string]string{
+		certificate.OIDIssuer.String(): i.IssuerPattern,
+		cryptoutils.SANOID.String():    i.SubjectAltNamePattern,
+
+		certificate.OIDGitHubWorkflowTrigger.String():    i.GitHubWorkflowTriggerPattern,
+		certificate.OIDGitHubWorkflowSHA.String():        i.GitHubWorkflowShaPattern,
+		certificate.OIDGitHubWorkflowName.String():       i.GitHubWorkflowNamePattern,
+		certificate.OIDGitHubWorkflowRepository.String(): i.GitHubWorkflowRepositoryPattern,
+		certificate.OIDGitHubWorkflowRef.String():        i.GitHubWorkflowRefPattern,
+
+		certificate.OIDBuildSignerURI.String():                      i.BuildSignerURIPattern,
+		certificate.OIDBuildSignerDigest.String():                   i.BuildSignerDigestPattern,
+		certificate.OIDRunnerEnvironment.String():                   i.RunnerEnvironmentPattern,
+		certificate.OIDSourceRepositoryURI.String():                 i.SourceRepositoryURIPattern,
+		certificate.OIDSourceRepositoryDigest.String():              i.SourceRepositoryDigestPattern,
+		certificate.OIDSourceRepositoryRef.String():                 i.SourceRepositoryRefPattern,
+		certificate.OIDSourceRepositoryIdentifier.String():          i.SourceRepositoryIdentifierPattern,
+		certificate.OIDSourceRepositoryOwnerURI.String():            i.SourceRepositoryOwnerURIPattern,
+		certificate.OIDSourceRepositoryOwnerIdentifier.String():     i.SourceRepositoryOwnerIdentifierPattern,
+		certificate.OIDBuildConfigURI.String():                      i.BuildConfigURIPattern,
+		certificate.OIDBuildConfigDigest.String():                   i.BuildConfigDigestPattern,
+		certificate.OIDBuildTrigger.String():                        i.BuildTriggerPattern,
+		certificate.OIDRunInvocationURI.String():                    i.RunInvocationURIPattern,
+		certificate.OIDSourceRepositoryVisibilityAtSigning.String(): i.SourceRepositoryVisibilityAtSigningPattern,
+	} {
 		if pattern == "" {
-			return nil
+			continue
 		}
 		re, err := regexp.Compile(pattern)
 		if err != nil {
-			return fmt.Errorf("compiling %s pattern: %w", oid, err)
+			return nil, fmt.Errorf("compiling %s pattern: %w", oid, err)
 		}
-		ret[oid.String()] = re
-		return nil
+		ret[oid] = re
 	}
-
-	if err := add(i.BuildTriggerPattern, certificate.OIDBuildTrigger); err != nil {
-		return nil, err
-	}
-
 	return ret, nil
 }
 

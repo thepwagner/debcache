@@ -1,33 +1,52 @@
 package signature
 
 import (
-	"crypto/x509/pkix"
+	"crypto/x509"
 	"log/slog"
 	"regexp"
 	"strings"
+
+	"github.com/sigstore/sigstore/pkg/cryptoutils"
 )
 
-type idVerifier struct {
+type CertificateVerifier struct {
 	values  map[string]string
 	regexps map[string]*regexp.Regexp
 }
 
-func newIDVerifier(identity FulcioIdentity) (*idVerifier, error) {
+func NewCertificateVerifier(identity FulcioIdentity) (*CertificateVerifier, error) {
 	regexps, err := identity.regexps()
 	if err != nil {
 		return nil, err
 	}
-	return &idVerifier{
+	return &CertificateVerifier{
 		values:  identity.values(),
 		regexps: regexps,
 	}, nil
 }
 
-func (v idVerifier) verifyExtensions(version string, ext []pkix.Extension) (bool, error) {
+func (v CertificateVerifier) Verify(version string, cert *x509.Certificate) (bool, error) {
 	vCount := len(v.values)
 	reCount := len(v.regexps)
-	slog.Debug("verifying extensions", slog.Int("needed_values", vCount), slog.Int("needed_regexps", reCount), slog.Int("extension_count", len(ext)))
-	for _, e := range ext {
+	slog.Debug("verifying extensions", slog.Int("needed_values", vCount), slog.Int("needed_regexps", reCount), slog.Int("extension_count", len(cert.Extensions)))
+
+	if expected, ok := v.values[cryptoutils.SANOID.String()]; ok {
+		var matched bool
+		for _, uri := range cert.URIs {
+			if uri.String() == expected {
+				matched = true
+				break
+			}
+		}
+
+		if !matched {
+			slog.Debug("subject alt name mismatch", slog.String("expected", expected))
+			return false, nil
+		}
+		vCount--
+	}
+
+	for _, e := range cert.Extensions {
 		actual, err := decodeExtension(e)
 		if err != nil {
 			return false, err

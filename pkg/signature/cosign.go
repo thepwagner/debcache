@@ -23,7 +23,7 @@ import (
 type RekorVerifier struct {
 	client *client.Rekor
 	pubs   *cosign.TrustedTransparencyLogPubKeys
-	id     *idVerifier
+	id     *CertificateVerifier
 }
 
 var _ Verifier = (*RekorVerifier)(nil)
@@ -37,7 +37,7 @@ func NewRekorVerifier(ctx context.Context, identity FulcioIdentity) (*RekorVerif
 	if err != nil {
 		return nil, err
 	}
-	id, err := newIDVerifier(identity)
+	id, err := NewCertificateVerifier(identity)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +137,7 @@ func (v RekorVerifier) verifyEntry(ctx context.Context, version string, entryUUI
 			return false, fmt.Errorf("parsing public key: %w", err)
 		}
 
-		if ok, err := v.id.verifyExtensions(version, cert.Extensions); err != nil {
+		if ok, err := v.id.Verify(version, cert); err != nil {
 			return false, fmt.Errorf("parsing extensions: %w", err)
 		} else if ok {
 			return true, nil
