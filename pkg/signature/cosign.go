@@ -111,14 +111,20 @@ func (v RekorVerifier) verifyEntry(ctx context.Context, version string, entryUUI
 		var pubKeyString string
 		switch entry := pe.(type) {
 		case *models.Intoto:
-			d := entry.Spec.(map[string]interface{})
+			d := entry.Spec.(map[string]any)
 			pubKeyString = d["publicKey"].(string)
 
 		case *models.Hashedrekord:
-			d := entry.Spec.(map[string]interface{})
-			sig := d["signature"].(map[string]interface{})
-			pk := sig["publicKey"].(map[string]interface{})
+			d := entry.Spec.(map[string]any)
+			sig := d["signature"].(map[string]any)
+			pk := sig["publicKey"].(map[string]any)
 			pubKeyString = pk["content"].(string)
+
+		case *models.DSSE:
+			d := entry.Spec.(map[string]any)
+			sigs := d["signatures"].([]any)
+			firstSig := sigs[0].(map[string]any)
+			pubKeyString = firstSig["verifier"].(string)
 
 		default:
 			return false, fmt.Errorf("unsupported entry type: %T", pe)
