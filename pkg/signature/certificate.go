@@ -32,15 +32,37 @@ func (v CertificateVerifier) Verify(version string, cert *x509.Certificate) (boo
 
 	if expected, ok := v.values[cryptoutils.SANOID.String()]; ok {
 		var matched bool
+		var actual []string
 		for _, uri := range cert.URIs {
 			if uri.String() == expected {
+				matched = true
+				break
+			}
+			actual = append(actual, uri.String())
+		}
+		for _, email := range cert.EmailAddresses {
+			if matched || email == expected {
+				matched = true
+				break
+			}
+			actual = append(actual, email)
+		}
+		for _, ext := range cert.Extensions {
+			if ext.Id.String() != cryptoutils.SANOID.String() {
+				continue
+			}
+			actual, err := decodeExtension(ext)
+			if err != nil {
+				return false, err
+			}
+			if actual == expected {
 				matched = true
 				break
 			}
 		}
 
 		if !matched {
-			slog.Debug("subject alt name mismatch", slog.String("expected", expected))
+			slog.Debug("subject alt name mismatch", slog.String("expected", expected), slog.Any("actual", actual))
 			return false, nil
 		}
 		vCount--
