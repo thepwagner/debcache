@@ -11,7 +11,7 @@ require (
 	github.com/go-openapi/runtime v0.28.0
 	github.com/google/go-github/v62 v62.0.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/lmittmann/tint v1.0.4
+	github.com/lmittmann/tint v1.0.5
 	github.com/sigstore/cosign/v2 v2.2.4
 	github.com/sigstore/fulcio v1.5.0
 	github.com/sigstore/rekor v1.3.6
