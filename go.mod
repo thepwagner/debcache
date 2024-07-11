@@ -13,7 +13,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/lmittmann/tint v1.0.4
 	github.com/sigstore/cosign/v2 v2.2.4
-	github.com/sigstore/fulcio v1.5.0
+	github.com/sigstore/fulcio v1.5.1
 	github.com/sigstore/rekor v1.3.6
 	github.com/sigstore/sigstore v1.8.6
 	github.com/sigstore/sigstore-go v0.4.0
