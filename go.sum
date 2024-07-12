@@ -288,6 +288,8 @@ github.com/google/go-containerregistry v0.19.1 h1:yMQ62Al6/V0Z7CqIrrS1iYoA5/oQCm
 github.com/google/go-containerregistry v0.19.1/go.mod h1:YCMFNQeeXeLF+dnhhWkqDItx/JSkH01j1Kis4PsjzFI=
 github.com/google/go-containerregistry v0.19.2 h1:TannFKE1QSajsP6hPWb5oJNgKe1IKjHukIKDUmvsV6w=
 github.com/google/go-containerregistry v0.19.2/go.mod h1:YCMFNQeeXeLF+dnhhWkqDItx/JSkH01j1Kis4PsjzFI=
+github.com/google/go-containerregistry v0.20.0 h1:wRqHpOeVh3DnenOrPy9xDOLdnLatiGuuNRVelR2gSbg=
+github.com/google/go-containerregistry v0.20.0/go.mod h1:YCMFNQeeXeLF+dnhhWkqDItx/JSkH01j1Kis4PsjzFI=
 github.com/google/go-github/v55 v55.0.0 h1:4pp/1tNMB9X/LuAhs5i0KQAE40NmiR/y6prLNb9x9cg=
 github.com/google/go-github/v55 v55.0.0/go.mod h1:JLahOTA1DnXzhxEymmFF5PP2tSS9JVNj68mSZNDwskA=
 github.com/google/go-github/v62 v62.0.0 h1:/6mGCaRywZz9MuHyw9gD1CwsbmBX8GWsbFkwMmHdhl4=
@@ -494,6 +496,8 @@ github.com/sigstore/sigstore v1.8.5 h1:8NrF2tGlvOvFnaRJcU+VehwG4W/Zb2/7Khavm5PGR
 github.com/sigstore/sigstore v1.8.5/go.mod h1:fJgbV5XFUbrhFAZSlv0ol7QJeH2PIUJJbfDEwUf3bvQ=
 github.com/sigstore/sigstore v1.8.6 h1:g066b/Nw5r5oxhNv4XqJUUzVcyf1b07itUueiQe7rZM=
 github.com/sigstore/sigstore v1.8.6/go.mod h1:UOBrJd9JBQ81DrkpGljzsIFXEtfC30raHvLWFWG857U=
+github.com/sigstore/sigstore v1.8.7 h1:L7/zKauHTg0d0Hukx7qlR4nifh6T6O6UIt9JBwAmTIg=
+github.com/sigstore/sigstore v1.8.7/go.mod h1:MPiQ/NIV034Fc3Kk2IX9/XmBQdK60wfmpvgK9Z1UjRA=
 github.com/sigstore/sigstore-go v0.3.0 h1:SxYqfonBrEhw8bNDelMieymxhdv7R9itiNZmtjOwKKU=
 github.com/sigstore/sigstore-go v0.3.0/go.mod h1:oJOH7UP8aTjAGnIVwq9sDif8M4CSCik84yN1vBuESbE=
 github.com/sigstore/sigstore-go v0.4.0 h1:0BxofjPnd+1LzyiCgsFP0NviMg8l20ZMf4aitkvYEU8=
