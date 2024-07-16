@@ -9,7 +9,7 @@ require (
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-openapi/runtime v0.28.0
-	github.com/google/go-github/v62 v62.0.0
+	github.com/google/go-github/v63 v63.0.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/lmittmann/tint v1.0.5
 	github.com/sigstore/cosign/v2 v2.2.4
@@ -113,7 +113,6 @@ require (
 	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240610135401-a8a62080eff3 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
-	gopkg.in/go-jose/go-jose.v2 v2.6.3 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gotest.tools/v3 v3.1.0 // indirect
 	k8s.io/klog/v2 v2.120.1 // indirect
