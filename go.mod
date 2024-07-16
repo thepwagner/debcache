@@ -15,7 +15,7 @@ require (
 	github.com/sigstore/cosign/v2 v2.2.4
 	github.com/sigstore/fulcio v1.5.0
 	github.com/sigstore/rekor v1.3.6
-	github.com/sigstore/sigstore v1.8.6
+	github.com/sigstore/sigstore v1.8.7
 	github.com/sigstore/sigstore-go v0.4.0
 	github.com/stretchr/testify v1.9.0
 	github.com/ulikunitz/xz v0.5.12
@@ -53,7 +53,7 @@ require (
 	github.com/go-openapi/validate v0.24.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/certificate-transparency-go v1.2.1 // indirect
-	github.com/google/go-containerregistry v0.19.2 // indirect
+	github.com/google/go-containerregistry v0.20.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
