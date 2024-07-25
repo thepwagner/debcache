@@ -14,7 +14,7 @@ require (
 	github.com/sigstore/fulcio v1.5.1
 	github.com/sigstore/rekor v1.3.6
 	github.com/sigstore/sigstore v1.8.7
-	github.com/sigstore/sigstore-go v0.4.0
+	github.com/sigstore/sigstore-go v0.5.1
 	github.com/stretchr/testify v1.9.0
 	github.com/ulikunitz/xz v0.5.12
 	golang.org/x/net v0.27.0
@@ -92,7 +92,7 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
 	github.com/theupdateframework/go-tuf v0.7.0 // indirect
-	github.com/theupdateframework/go-tuf/v2 v2.0.0-20240223092044-1e7978e83f63 // indirect
+	github.com/theupdateframework/go-tuf/v2 v2.0.0 // indirect
 	github.com/titanous/rocacheck v0.0.0-20171023193734-afe73141d399 // indirect
 	github.com/transparency-dev/merkle v0.0.2 // indirect
 	github.com/vbatts/tar-split v0.11.5 // indirect
@@ -104,7 +104,7 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/crypto v0.25.0 // indirect
 	golang.org/x/exp v0.0.0-20240112132812-db7319d0e0e3 // indirect
-	golang.org/x/mod v0.17.0 // indirect
+	golang.org/x/mod v0.19.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/term v0.22.0 // indirect

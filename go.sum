@@ -481,6 +481,8 @@ github.com/sigstore/sigstore v1.8.7 h1:L7/zKauHTg0d0Hukx7qlR4nifh6T6O6UIt9JBwAmT
 github.com/sigstore/sigstore v1.8.7/go.mod h1:MPiQ/NIV034Fc3Kk2IX9/XmBQdK60wfmpvgK9Z1UjRA=
 github.com/sigstore/sigstore-go v0.4.0 h1:0BxofjPnd+1LzyiCgsFP0NviMg8l20ZMf4aitkvYEU8=
 github.com/sigstore/sigstore-go v0.4.0/go.mod h1:KZQFwvDItf1sr5P8YhVIjjXBe1ZyeFuC4odn7/2Uie0=
+github.com/sigstore/sigstore-go v0.5.1 h1:5IhKvtjlQBeLnjKkzMELNG4tIBf+xXQkDzhLV77+/8Y=
+github.com/sigstore/sigstore-go v0.5.1/go.mod h1:TuOfV7THHqiDaUHuJ5+QN23RP/YoKmsbwJpY+aaYPN0=
 github.com/sigstore/sigstore/pkg/signature/kms/aws v1.8.4 h1:okxaVlaTrQowE1FA4UQ3rw54f7BUjdnzERIxbZTBZuc=
 github.com/sigstore/sigstore/pkg/signature/kms/aws v1.8.4/go.mod h1:jkcPErmnCECuSJajUaUq5pwCMOeBF19VzQo6bv4l1D0=
 github.com/sigstore/sigstore/pkg/signature/kms/azure v1.8.4 h1:1G6uLTZaqvu867DbgH7p75L6Y7Tu8LLnYJGZnWsTUu8=
@@ -535,6 +537,8 @@ github.com/theupdateframework/go-tuf v0.7.0 h1:CqbQFrWo1ae3/I0UCblSbczevCCbS31Qv
 github.com/theupdateframework/go-tuf v0.7.0/go.mod h1:uEB7WSY+7ZIugK6R1hiBMBjQftaFzn7ZCDJcp1tCUug=
 github.com/theupdateframework/go-tuf/v2 v2.0.0-20240223092044-1e7978e83f63 h1:27XWhDZHPD+cufF6qSdYx6PgGQvD2jJ6pq9sDvR6VBk=
 github.com/theupdateframework/go-tuf/v2 v2.0.0-20240223092044-1e7978e83f63/go.mod h1:+gWwqe1pk4nvGeOKosGJqPgD+N/kbD9M0QVLL9TGIYU=
+github.com/theupdateframework/go-tuf/v2 v2.0.0 h1:rD8d9RotYBprZVgC+9oyTZ5MmawepnTSTqoDuxjWgbs=
+github.com/theupdateframework/go-tuf/v2 v2.0.0/go.mod h1:baB22nBHeHBCeuGZcIlctNq4P61PcOdyARlplg5xmLA=
 github.com/titanous/rocacheck v0.0.0-20171023193734-afe73141d399 h1:e/5i7d4oYZ+C1wj2THlRK+oAhjeS/TRQwMfkIuet3w0=
 github.com/titanous/rocacheck v0.0.0-20171023193734-afe73141d399/go.mod h1:LdwHTNJT99C5fTAzDz0ud328OgXz+gierycbcIx2fRs=
 github.com/tjfoc/gmsm v1.4.1 h1:aMe1GlZb+0bLjn+cKTPEvvn9oUEBlJitaZiiBwsbgho=
@@ -604,6 +608,8 @@ golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4/go.mod h1:jJ57K6gSWd91
 golang.org/x/mod v0.8.0/go.mod h1:iBbtSCu2XBx23ZKBPSOrRkjjQPZFPuis4dIYUhu/chs=
 golang.org/x/mod v0.17.0 h1:zY54UmvipHiNd+pm+m0x9KhZ9hl1/7QNMyxXbc6ICqA=
 golang.org/x/mod v0.17.0/go.mod h1:hTbmBsO62+eylJbnUtE2MGJUyE7QWk4xUqPFrRgJ+7c=
+golang.org/x/mod v0.19.0 h1:fEdghXQSo20giMthA7cd28ZC+jts4amQ3YMXiP5oMQ8=
+golang.org/x/mod v0.19.0/go.mod h1:hTbmBsO62+eylJbnUtE2MGJUyE7QWk4xUqPFrRgJ+7c=
 golang.org/x/net v0.0.0-20180906233101-161cd47e91fd/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
 golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3/go.mod h1:t9HGtf8HONx5eT2rtn7q6eTqICYqUVnKs3thJo3Qplg=
 golang.org/x/net v0.0.0-20190620200207-3b0461eec859/go.mod h1:z5CRVTTTmAJ677TzLLGU+0bjPO0LkuOLi4/5GtJWs/s=
