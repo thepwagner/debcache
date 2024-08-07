@@ -13,7 +13,7 @@ require (
 	github.com/sigstore/cosign/v2 v2.3.0
 	github.com/sigstore/fulcio v1.5.1
 	github.com/sigstore/rekor v1.3.6
-	github.com/sigstore/sigstore v1.8.7
+	github.com/sigstore/sigstore v1.8.8
 	github.com/sigstore/sigstore-go v0.5.1
 	github.com/stretchr/testify v1.9.0
 	github.com/ulikunitz/xz v0.5.12
