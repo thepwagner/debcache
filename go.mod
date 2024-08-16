@@ -11,7 +11,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/lmittmann/tint v1.0.5
 	github.com/sigstore/cosign/v2 v2.4.0
-	github.com/sigstore/fulcio v1.6.1
+	github.com/sigstore/fulcio v1.6.2
 	github.com/sigstore/rekor v1.3.6
 	github.com/sigstore/sigstore v1.8.8
 	github.com/sigstore/sigstore-go v0.5.1

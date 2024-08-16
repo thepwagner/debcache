@@ -483,6 +483,8 @@ github.com/sigstore/fulcio v1.6.0 h1:65EijJiTQNQ0T623wC+Pf4G2fTNjtcncoLrj1cMjds8
 github.com/sigstore/fulcio v1.6.0/go.mod h1:bAjHJ3YTCWotYKyCPmZdwUOgjC2RKQbhgSHVgs0OyGk=
 github.com/sigstore/fulcio v1.6.1 h1:9LcnJXeWglr4gDiIBTtUbof9pXnsvzoB8er/vfqnkng=
 github.com/sigstore/fulcio v1.6.1/go.mod h1:nHMoqPZZYPg7yhEvPIHv4NBr5UDK1HD6coB8Nk+JvX8=
+github.com/sigstore/fulcio v1.6.2 h1:lJT+SrH6LFic6vofey/NdvMOAjcWLVYk8ZT74uaxI5w=
+github.com/sigstore/fulcio v1.6.2/go.mod h1:nHMoqPZZYPg7yhEvPIHv4NBr5UDK1HD6coB8Nk+JvX8=
 github.com/sigstore/protobuf-specs v0.3.2 h1:nCVARCN+fHjlNCk3ThNXwrZRqIommIeNKWwQvORuRQo=
 github.com/sigstore/protobuf-specs v0.3.2/go.mod h1:RZ0uOdJR4OB3tLQeAyWoJFbNCBFrPQdcokntde4zRBA=
 github.com/sigstore/rekor v1.3.6 h1:QvpMMJVWAp69a3CHzdrLelqEqpTM3ByQRt5B5Kspbi8=
