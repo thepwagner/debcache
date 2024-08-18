@@ -88,7 +88,7 @@ func (gh *GitHubVerifier) getAttestations(ctx context.Context, digest []byte) ([
 }
 
 type Attestation struct {
-	Bundle *bundle.ProtobufBundle `json:"bundle"`
+	Bundle *bundle.Bundle `json:"bundle"`
 }
 
 type AttestationReply struct {
