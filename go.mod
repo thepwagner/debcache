@@ -14,7 +14,7 @@ require (
 	github.com/sigstore/fulcio v1.6.2
 	github.com/sigstore/rekor v1.3.6
 	github.com/sigstore/sigstore v1.8.8
-	github.com/sigstore/sigstore-go v0.5.1
+	github.com/sigstore/sigstore-go v0.6.0
 	github.com/stretchr/testify v1.9.0
 	github.com/ulikunitz/xz v0.5.12
 	golang.org/x/net v0.28.0
@@ -57,6 +57,7 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
 	github.com/hashicorp/hcl v1.0.1-vault-5 // indirect
+	github.com/in-toto/attestation v1.1.0 // indirect
 	github.com/in-toto/in-toto-golang v0.9.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jedisct1/go-minisign v0.0.0-20230811132847-661be99b8267 // indirect
@@ -104,7 +105,7 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/crypto v0.26.0 // indirect
 	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8 // indirect
-	golang.org/x/mod v0.19.0 // indirect
+	golang.org/x/mod v0.20.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/sys v0.23.0 // indirect
 	golang.org/x/term v0.23.0 // indirect
