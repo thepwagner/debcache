@@ -8,6 +8,7 @@ require (
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-openapi/runtime v0.28.0
 	github.com/google/go-github/v63 v63.0.0
+	github.com/google/go-github/v64 v64.0.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/lmittmann/tint v1.0.5
 	github.com/sigstore/cosign/v2 v2.4.0
