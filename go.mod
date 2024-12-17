@@ -5,7 +5,7 @@ go 1.23.2
 require (
 	github.com/ProtonMail/go-crypto v1.1.3
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
-	github.com/go-chi/chi/v5 v5.1.0
+	github.com/go-chi/chi/v5 v5.2.0
 	github.com/go-openapi/runtime v0.28.0
 	github.com/google/go-github/v67 v67.0.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
