@@ -2,7 +2,7 @@ module github.com/thepwagner/debcache
 
 go 1.23.3
 
-toolchain go1.23.5
+toolchain go1.23.6
 
 require (
 	github.com/ProtonMail/go-crypto v1.1.5
