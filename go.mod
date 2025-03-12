@@ -15,7 +15,7 @@ require (
 	github.com/sigstore/cosign/v2 v2.4.3
 	github.com/sigstore/fulcio v1.6.6
 	github.com/sigstore/rekor v1.3.9
-	github.com/sigstore/sigstore v1.9.0
+	github.com/sigstore/sigstore v1.9.1
 	github.com/sigstore/sigstore-go v0.7.0
 	github.com/stretchr/testify v1.10.0
 	github.com/ulikunitz/xz v0.5.12
